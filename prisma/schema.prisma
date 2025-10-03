@@ -2530,6 +2530,80 @@ model AutoApprovalRule {
 }
 
 // ============================================
+// ONBOARDING & USER EXPERIENCE
+// ============================================
+
+// User onboarding progress tracking
+model OnboardingProgress {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Overall progress
+  currentStep     Int     @default(1) // Current step (1-8)
+  completedSteps  Int[]   @default([]) // Array of completed step numbers
+  isCompleted     Boolean @default(false)
+  completedAt     DateTime?
+
+  // Step 1: Welcome (auto-completed)
+  step1Completed Boolean @default(false)
+  step1Data      Json? // Welcome screen interaction data
+
+  // Step 2: GitHub Connection
+  step2Completed Boolean @default(false)
+  step2Data      Json? // {repoId, repoName, skipped}
+
+  // Step 3: Content Types
+  step3Completed Boolean @default(false)
+  step3Data      Json? // {selectedTypes: []}
+
+  // Step 4: Brand Voice (3-question quiz)
+  step4Completed Boolean @default(false)
+  step4Data      Json? // {tone, audience, themes, generatedVoice}
+
+  // Step 5: Platform Connection
+  step5Completed Boolean @default(false)
+  step5Data      Json? // {platforms: [], skipped}
+
+  // Step 6: Test Content Generation
+  step6Completed Boolean @default(false)
+  step6Data      Json? // {contentId, accepted}
+
+  // Step 7: Review & Customize
+  step7Completed Boolean @default(false)
+  step7Data      Json? // {cronSchedule, frequency}
+
+  // Step 8: Setup Complete
+  step8Completed Boolean @default(false)
+  step8Data      Json? // {tourStarted}
+
+  // Session management
+  lastActiveStep Int      @default(1)
+  lastActiveAt   DateTime @default(now())
+  canResume      Boolean  @default(true)
+
+  // Skip tracking
+  skippedSteps Int[] @default([])
+
+  // Tour progress
+  tourCompleted     Boolean   @default(false)
+  tourStartedAt     DateTime?
+  tourCompletedAt   DateTime?
+  tourSkippedAt     DateTime?
+  tourProgress      Json? // {viewedSteps: [], currentStep}
+
+  // Metadata
+  metadata Json? // Additional tracking data
+
+  @@index([userId])
+  @@index([isCompleted])
+  @@index([currentStep])
+  @@index([lastActiveAt])
+  @@map("onboarding_progress")
+}
+
+// ============================================
 // ERROR TRACKING & MONITORING
 // ============================================
 

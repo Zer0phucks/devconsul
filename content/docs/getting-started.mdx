@@ -1,0 +1,236 @@
+---
+title: "Getting Started with Full Self Publishing"
+description: "Quick start guide to set up your account and start generating content"
+---
+
+# Getting Started with Full Self Publishing
+
+Welcome to Full Self Publishing! This guide will walk you through setting up your account and generating your first piece of automated content.
+
+## What is Full Self Publishing?
+
+Full Self Publishing is an automated content generation platform that monitors your GitHub repository activity and uses AI to create platform-specific content. Turn your commits, pull requests, and releases into blog posts, social media updates, and newsletters automatically.
+
+## Prerequisites
+
+Before you begin, you'll need:
+
+- A GitHub account with at least one repository
+- Access to at least one publishing platform (WordPress, Twitter, LinkedIn, etc.)
+- An active email address for account verification
+
+## Step 1: Create Your Account
+
+1. Visit [fullselfpublishing.com](https://fullselfpublishing.com)
+2. Click "Sign Up" in the top right corner
+3. Choose your sign-up method:
+   - Email and password
+   - Sign in with Google
+   - Sign in with GitHub
+4. Verify your email address (if using email/password)
+5. Complete your profile information
+
+**Time estimate:** 2-3 minutes
+
+## Step 2: Connect Your GitHub Repository {#github}
+
+### Why GitHub?
+
+We need access to your repository to read:
+- Commit messages and descriptions
+- Pull request details
+- Release notes and changelogs
+- Issue updates
+
+We **never** modify your code or access repository contents beyond metadata.
+
+### Connection Steps
+
+1. Navigate to **Settings > Integrations > GitHub**
+2. Click **"Connect GitHub Account"**
+3. Authorize Full Self Publishing in the GitHub OAuth flow
+4. Select which repositories to connect (you can add more later)
+5. Choose your primary repository for content generation
+
+**Permissions we request:**
+- `repo:read` - Read repository metadata
+- `user:email` - Identify your account
+
+### Troubleshooting
+
+**Issue:** "Repository not showing up"
+- **Solution:** Make sure you've granted access to the repository in your GitHub settings
+
+**Issue:** "OAuth connection failed"
+- **Solution:** Check that you're logged into the correct GitHub account
+
+## Step 3: Create Your First Project
+
+Projects help you organize content generation for different repositories or purposes.
+
+1. Go to **Dashboard**
+2. Click **"New Project"**
+3. Fill in the project details:
+   - **Name:** Your project name (e.g., "My Awesome Library")
+   - **Repository:** Select the connected GitHub repo
+   - **Description:** Brief project description (helps AI understand context)
+4. Click **"Create Project"**
+
+**Pro tip:** Create separate projects for different repositories or different content strategies for the same repo.
+
+## Step 4: Configure Content Settings
+
+### Choose Content Types
+
+Decide what types of content you want to generate:
+
+- **Blog Posts** - Long-form articles about updates and features
+- **Social Media** - Short updates for Twitter, LinkedIn, etc.
+- **Newsletters** - Email summaries of recent activity
+- **Release Notes** - Formatted changelog announcements
+
+Enable the types you want in **Project Settings > Content Types**.
+
+### Set Your Brand Voice
+
+Tell the AI how to write in your style:
+
+1. Go to **Project Settings > Brand Voice**
+2. Choose your tone:
+   - **Professional** - Formal, business-focused
+   - **Casual** - Friendly, conversational
+   - **Technical** - Developer-focused, detailed
+3. Add custom instructions (optional):
+   ```
+   Example: "Write in an enthusiastic tone, use emojis sparingly,
+   focus on developer benefits, and always include code examples."
+   ```
+
+### Configure Generation Schedule
+
+Set how often content should be generated:
+
+1. Go to **Project Settings > Schedule**
+2. Choose frequency:
+   - **Daily** - Check for activity every day
+   - **Weekly** - Monday morning reviews
+   - **Monthly** - First of the month summaries
+   - **On-Demand** - Manual triggers only
+3. Set timezone for scheduling
+
+**Recommendation:** Start with weekly to see how it works, then adjust.
+
+## Step 5: Connect a Publishing Platform
+
+Choose at least one platform to publish your generated content:
+
+### Quick Setup Options
+
+**For Blog Posts:**
+- [WordPress](/docs/integrations/wordpress) - Most popular, full OAuth support
+- [Ghost](/docs/integrations/ghost) - Clean API, API key auth
+- [Medium](/docs/integrations/medium) - Built-in audience
+
+**For Social Media:**
+- [Twitter/X](/docs/integrations/twitter) - Real-time updates
+- [LinkedIn](/docs/integrations/linkedin) - Professional network
+- [Facebook](/docs/integrations/facebook) - Broad reach
+
+**For Email:**
+- [Resend](/docs/integrations/resend) - Modern email API
+- [SendGrid](/docs/integrations/sendgrid) - Enterprise features
+- [Mailchimp](/docs/integrations/mailchimp) - List management
+
+### Basic Connection Steps
+
+1. Navigate to **Settings > Platforms**
+2. Click on your chosen platform
+3. Follow the platform-specific setup:
+   - **OAuth platforms:** Click "Connect" and authorize
+   - **API key platforms:** Enter your API credentials
+4. Verify connection status shows "Connected"
+
+**Time estimate:** 5-10 minutes per platform
+
+## Step 6: Generate Your First Content
+
+Now for the fun part!
+
+### Option A: Generate Immediately
+
+1. Go to your **Project Dashboard**
+2. Click **"Generate Content Now"**
+3. The system will:
+   - Scan your GitHub activity since the last check
+   - Analyze commits, PRs, and releases
+   - Generate platform-specific content using AI
+4. Review the generated content in the **Content** tab
+
+### Option B: Wait for Scheduled Generation
+
+If you configured a schedule, content will automatically generate at your chosen frequency.
+
+## Step 7: Review and Publish
+
+### Review Generated Content
+
+1. Navigate to **Project > Content**
+2. You'll see content organized by platform
+3. Each piece shows:
+   - Generated content preview
+   - Target platform
+   - Generated timestamp
+   - Status (Draft/Approved/Published)
+
+### Edit if Needed
+
+- Click **"Edit"** to modify the content
+- Use the rich text editor for formatting
+- Click **"Regenerate"** to create a new version with different instructions
+- Click **"Save Draft"** to keep changes
+
+### Publish Content
+
+Two publishing options:
+
+**Manual Publishing:**
+1. Review the content
+2. Click **"Approve & Publish"**
+3. Content is sent to the connected platform
+4. Status updates to "Published"
+
+**Auto-Publishing:**
+1. Enable in **Project Settings > Publishing**
+2. Toggle **"Auto-publish approved content"**
+3. Content publishes automatically after generation
+4. You can still review before it goes live with approval workflows
+
+## Next Steps
+
+Congratulations! You've set up Full Self Publishing and generated your first content.
+
+### Optimize Your Setup
+
+- **Add More Platforms:** Connect additional publishing destinations
+- **Create Templates:** Build reusable content templates for consistency
+- **Enable Analytics:** Track engagement across platforms
+- **Set Up Webhooks:** Integrate with custom systems
+
+### Learn More
+
+- [Platform Integration Guides](/docs/integrations) - Detailed setup for all platforms
+- [Content Generation Features](/docs/features/content-generation) - Advanced AI features
+- [Scheduling & Automation](/docs/features/scheduling) - Master automated workflows
+- [API Documentation](/docs/api) - Build custom integrations
+
+### Get Help
+
+- [FAQ](/docs/faq) - Common questions and answers
+- [Video Tutorials](/docs/videos) - Step-by-step video guides
+- [Support](/support) - Contact our team
+
+---
+
+**Estimated total setup time:** 20-30 minutes
+
+Ready to automate your content? Let's go! 🚀

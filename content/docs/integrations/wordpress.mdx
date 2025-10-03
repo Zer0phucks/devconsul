@@ -1,0 +1,258 @@
+---
+title: "WordPress Integration Guide"
+description: "Connect Full Self Publishing to your WordPress site"
+platform: "wordpress"
+---
+
+# WordPress Integration
+
+Automatically publish blog posts to your WordPress site using Full Self Publishing.
+
+## Prerequisites
+
+- WordPress site (self-hosted or WordPress.com)
+- Admin access to your WordPress site
+- WordPress Application Passwords enabled (WordPress 5.6+)
+
+## Setup Methods
+
+### Method 1: OAuth (Recommended for WordPress.com)
+
+**Best for:** WordPress.com sites, managed WordPress hosts with OAuth support
+
+1. Go to **Settings > Platforms > WordPress**
+2. Click **"Connect with OAuth"**
+3. Select your WordPress.com site or enter custom OAuth endpoint
+4. Click **"Authorize"**
+5. You'll be redirected to WordPress to grant permissions
+6. Click **"Approve"** to allow Full Self Publishing access
+7. You'll be redirected back with "Connected" status
+
+**Permissions granted:**
+- Create and publish posts
+- Upload media (featured images)
+- Manage categories and tags
+
+### Method 2: Application Passwords (Self-Hosted)
+
+**Best for:** Self-hosted WordPress installations
+
+#### Step 1: Enable Application Passwords
+
+WordPress 5.6+ has Application Passwords built-in. If you don't see this feature:
+
+1. Install the **Application Passwords** plugin
+2. Activate the plugin
+3. Go to **Users > Your Profile**
+
+#### Step 2: Generate Application Password
+
+1. Scroll to **Application Passwords** section
+2. Enter application name: `Full Self Publishing`
+3. Click **"Add New Application Password"**
+4. **Copy the generated password immediately** (you won't see it again)
+
+The password looks like: `xxxx xxxx xxxx xxxx xxxx xxxx`
+
+#### Step 3: Configure Full Self Publishing
+
+1. Go to **Settings > Platforms > WordPress**
+2. Select **"Application Password"** method
+3. Enter your credentials:
+   - **Site URL:** `https://yourdomain.com` (no trailing slash)
+   - **Username:** Your WordPress username
+   - **Application Password:** Paste the password (spaces are okay)
+4. Click **"Connect"**
+5. Wait for connection verification
+
+## Configuration Options
+
+### Post Settings
+
+Configure how posts are created:
+
+- **Status:** Draft, Pending Review, or Publish
+- **Author:** Select WordPress user to attribute posts to
+- **Category:** Default category for generated posts
+- **Tags:** Automatically add tags based on content
+- **Comment Status:** Open or Closed
+- **Ping Status:** Open or Closed
+
+### Featured Images
+
+**Enable AI-generated featured images:**
+1. Toggle **"Generate Featured Images"** in platform settings
+2. Choose image style (professional, creative, technical)
+3. Images are uploaded to your WordPress media library
+4. Alternative: Disable auto-generation and add manually
+
+### Custom Fields
+
+Map Full Self Publishing data to WordPress custom fields:
+
+```
+GitHub Commit SHA → custom_field: source_commit
+Generation Date → custom_field: ai_generated_date
+Platform → custom_field: published_from
+```
+
+## Publishing Workflow
+
+### Default Post Structure
+
+Generated WordPress posts include:
+
+```html
+<!-- Title -->
+h1: Derived from GitHub activity summary
+
+<!-- Content -->
+Introduction paragraph
+Main content with headings (H2, H3)
+Code blocks (if applicable)
+Conclusion with call-to-action
+
+<!-- Metadata -->
+Categories: Auto-detected or default
+Tags: AI-generated based on content
+Excerpt: First 150 characters
+```
+
+### Pre-Publish Checklist
+
+Before enabling auto-publish, verify:
+
+- [ ] Connection status is "Connected"
+- [ ] Post status is set appropriately (Draft recommended for testing)
+- [ ] Default category exists
+- [ ] Author user has correct permissions
+- [ ] Featured image generation is configured (if enabled)
+- [ ] Test a manual publish first
+
+## Advanced Features
+
+### Custom Templates
+
+Override default post structure:
+
+1. Go to **Project Settings > Templates**
+2. Create new template for WordPress
+3. Use placeholders:
+   - `{{title}}` - Generated title
+   - `{{content}}` - Main content
+   - `{{summary}}` - Brief summary
+   - `{{github_url}}` - Link to repository
+   - `{{commit_sha}}` - Commit reference
+4. Save and select as default
+
+Example template:
+```markdown
+{{content}}
+
+---
+
+**This post was auto-generated from GitHub activity.**
+[View source on GitHub]({{github_url}})
+```
+
+### Gutenberg Blocks
+
+Generate content as Gutenberg blocks:
+
+1. Enable **"Use Gutenberg Format"** in WordPress settings
+2. Content will be structured as blocks:
+   - Paragraph blocks
+   - Heading blocks
+   - Code blocks (for snippets)
+   - Image blocks (for featured images)
+
+### Classic Editor
+
+For sites still using Classic Editor:
+
+1. Content generated as HTML
+2. `<p>`, `<h2>`, `<pre>` tags used
+3. No block delimiters
+
+### Scheduling
+
+Publish posts at specific times:
+
+1. Set **Post Status** to "Future"
+2. Configure publish time in content settings
+3. WordPress handles scheduled publishing
+
+## Troubleshooting
+
+### Common Issues
+
+**"Connection failed"**
+- Verify WordPress URL is correct (include https://)
+- Check username and application password
+- Ensure Application Passwords is enabled
+- Try resetting the application password
+
+**"Unauthorized" errors**
+- Verify user has `publish_posts` capability
+- Check application password hasn't expired
+- Re-authenticate with WordPress
+
+**"Cannot upload images"**
+- Confirm user has `upload_files` capability
+- Check WordPress media directory permissions
+- Verify file size limits
+
+**Posts not appearing**
+- Check post status (might be Draft)
+- Verify category exists
+- Look in WordPress admin under All Posts
+
+### Debug Mode
+
+Enable detailed logging:
+
+1. Go to **Settings > Advanced > Debug**
+2. Toggle **"Enable WordPress Debug Logging"**
+3. Logs show in **Settings > Activity Log**
+4. Look for WordPress API responses
+
+## API Endpoints Used
+
+Full Self Publishing uses the WordPress REST API:
+
+```
+POST   /wp-json/wp/v2/posts          - Create posts
+POST   /wp-json/wp/v2/media          - Upload images
+GET    /wp-json/wp/v2/categories     - Fetch categories
+GET    /wp-json/wp/v2/tags           - Fetch tags
+GET    /wp-json/wp/v2/users/me       - Verify authentication
+```
+
+## Security Best Practices
+
+- Use Application Passwords (never use main password)
+- Revoke unused application passwords regularly
+- Use HTTPS for your WordPress site
+- Limit user capabilities to minimum required
+- Review published content before going live
+- Enable two-factor authentication on WordPress
+
+## Rate Limits
+
+WordPress REST API limits:
+- WordPress.com: 100 requests/minute
+- Self-hosted: Depends on server configuration
+- Recommended: Max 10 posts per hour
+
+## Support Resources
+
+- [WordPress REST API Handbook](https://developer.wordpress.org/rest-api/)
+- [Application Passwords Documentation](https://make.wordpress.org/core/2020/11/05/application-passwords-integration-guide/)
+- [Full Self Publishing Support](/support)
+
+---
+
+**Next Steps:**
+- [Generate Your First WordPress Post](/docs/features/content-generation)
+- [Customize Post Templates](/docs/features/templates)
+- [Track WordPress Analytics](/docs/features/analytics)

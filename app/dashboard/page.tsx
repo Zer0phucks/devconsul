@@ -1,11 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, FolderGit2 } from "lucide-react"
-import { AppShell } from "@/components/layout/AppShell"
+import { Plus } from "lucide-react"
+import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { ProjectCard } from "@/components/project/ProjectCard"
 import { ProjectForm } from "@/components/project/ProjectForm"
 import { Button } from "@/components/ui/button"
+import { CardSkeleton } from "@/components/ui/skeleton"
+import { NoProjectsEmptyState } from "@/components/ui/empty-state"
+import { useToastNotifications } from "@/lib/hooks/use-toast-notifications"
 import type { ProjectFormData } from "@/lib/validations/project"
 
 interface Project {
@@ -24,6 +27,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const toast = useToastNotifications()
 
   useEffect(() => {
     fetchProjects()
@@ -37,6 +41,7 @@ export default function DashboardPage() {
       setProjects(data)
     } catch (error) {
       console.error("Error fetching projects:", error)
+      toast.error("Failed to load projects", "Please try refreshing the page")
     } finally {
       setIsLoading(false)
     }
@@ -54,8 +59,11 @@ export default function DashboardPage() {
 
       const newProject = await response.json()
       setProjects((prev) => [newProject, ...prev])
+      toast.success("Project created", `${data.name} has been created successfully`)
+      setIsCreateOpen(false)
     } catch (error) {
       console.error("Error creating project:", error)
+      toast.error("Failed to create project", "Please try again")
       throw error
     }
   }
@@ -76,9 +84,11 @@ export default function DashboardPage() {
       setProjects((prev) =>
         prev.map((p) => (p.id === updatedProject.id ? updatedProject : p))
       )
+      toast.success("Project updated", `${data.name} has been updated`)
       setEditingProject(null)
     } catch (error) {
       console.error("Error updating project:", error)
+      toast.error("Failed to update project", "Please try again")
       throw error
     }
   }
@@ -94,69 +104,52 @@ export default function DashboardPage() {
       if (!response.ok) throw new Error("Failed to delete project")
 
       setProjects((prev) => prev.filter((p) => p.id !== projectId))
+      toast.success("Project deleted", "The project has been removed")
     } catch (error) {
       console.error("Error deleting project:", error)
+      toast.error("Failed to delete project", "Please try again")
     }
   }
 
   return (
-    <AppShell>
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-              <p className="mt-2 text-gray-600">
-                Manage your documentation projects and repositories
-              </p>
-            </div>
-            <Button onClick={() => setIsCreateOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Project
-            </Button>
-          </div>
-        </div>
-
-        {/* Project Grid */}
-        {isLoading ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-48 bg-gray-100 rounded-lg animate-pulse"
-              />
-            ))}
-          </div>
-        ) : projects.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-              <FolderGit2 className="h-8 w-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No projects yet
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Get started by creating your first project
+    <DashboardLayout>
+      {/* Header */}
+      <div className="mb-6 md:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">Projects</h1>
+            <p className="mt-1 md:mt-2 text-sm md:text-base text-muted-foreground">
+              Manage your documentation projects and repositories
             </p>
-            <Button onClick={() => setIsCreateOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Your First Project
-            </Button>
           </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onEdit={setEditingProject}
-                onDelete={handleDeleteProject}
-              />
-            ))}
-          </div>
-        )}
+          <Button onClick={() => setIsCreateOpen(true)} className="w-full sm:w-auto">
+            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+            New Project
+          </Button>
+        </div>
       </div>
+
+      {/* Project Grid */}
+      {isLoading ? (
+        <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      ) : projects.length === 0 ? (
+        <NoProjectsEmptyState onCreate={() => setIsCreateOpen(true)} />
+      ) : (
+        <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          {projects.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              onEdit={setEditingProject}
+              onDelete={handleDeleteProject}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Create Project Modal */}
       <ProjectForm
@@ -176,6 +169,6 @@ export default function DashboardPage() {
           mode="edit"
         />
       )}
-    </AppShell>
+    </DashboardLayout>
   )
 }
