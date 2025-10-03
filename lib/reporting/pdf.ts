@@ -3,11 +3,14 @@
  *
  * Professional PDF report generation with charts and templates
  * Using PDFKit for server-side PDF generation
+ *
+ * NOTE: Currently disabled due to Turbopack compatibility issues with pdfkit/fontkit
+ * TODO: Re-enable once Next.js/Turbopack supports these dependencies
  */
 
-import PDFDocument from "pdfkit";
+// import PDFDocument from "pdfkit";
 import { Readable } from "stream";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import type { ReportType } from "@prisma/client";
 import { format } from "date-fns";
 
@@ -243,6 +246,9 @@ async function fetchReportData(
 export async function generatePDFReport(
   options: PDFReportOptions
 ): Promise<Readable> {
+  throw new Error("PDF generation temporarily disabled due to Turbopack compatibility. Please use JSON/CSV export instead.");
+
+  /* DISABLED - Turbopack incompatibility with pdfkit
   const data = await fetchReportData(
     options.projectId,
     options.dateFrom,
@@ -293,6 +299,7 @@ export async function generatePDFReport(
   doc.end();
 
   return doc as unknown as Readable;
+  */
 }
 
 /**
@@ -642,6 +649,9 @@ export async function streamPDFToFile(
   stream: Readable,
   filePath: string
 ): Promise<number> {
+  throw new Error("PDF generation temporarily disabled due to Turbopack compatibility. Please use JSON/CSV export instead.");
+
+  /* DISABLED - Turbopack incompatibility
   const fs = await import("fs");
   const writeStream = fs.createWriteStream(filePath);
 
@@ -661,4 +671,5 @@ export async function streamPDFToFile(
     writeStream.on("error", reject);
     stream.on("error", reject);
   });
+  */
 }

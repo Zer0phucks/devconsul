@@ -467,3 +467,5 @@ export async function assignTags(
     return false;
   }
 }
+export function createWordPressClient(config: any) { throw new Error('WordPress client not implemented'); }
+export async function refreshAccessToken(token: any) { throw new Error('refreshAccessToken not implemented'); }

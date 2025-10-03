@@ -258,3 +258,4 @@ export async function testConnection(client: MediumClient): Promise<boolean> {
     return false;
   }
 }
+export function createMediumClient(config: any) { throw new Error('Medium client not implemented'); }

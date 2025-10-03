@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "@/lib/auth"
 import { authOptions } from "@/lib/auth"
 import { db as prisma } from "@/lib/db"
 import { contentSettingsSchema, defaultSettings } from "@/lib/validations/settings"

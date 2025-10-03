@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { updatePromptSchema } from '@/lib/validations/prompt';
 import { validatePromptQuality } from '@/lib/validations/prompt';

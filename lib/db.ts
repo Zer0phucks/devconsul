@@ -102,3 +102,6 @@ export async function executeTransaction<T>(
 // Export Prisma types for convenience
 export type { Prisma } from '@prisma/client';
 export * from '@prisma/client';
+
+// Alias for compatibility with existing code
+export const prisma = db;

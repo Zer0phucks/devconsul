@@ -318,3 +318,4 @@ export function validatePayloadTemplate(template: string): {
     variables: [...new Set(variables)], // Remove duplicates
   };
 }
+export function createWebhookClient(config: any) { throw new Error('Webhook client not implemented'); }

@@ -441,3 +441,9 @@ export async function getResourceUsage(): Promise<{
     nodeVersion: process.version,
   };
 }
+
+// Get job metrics
+export async function getJobMetrics(jobId: string) {
+  // Stub for missing functionality
+  return { jobId, metrics: {} };
+}

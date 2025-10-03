@@ -448,3 +448,26 @@ ${mapped.recoverable ? 'This issue may be temporary. You can retry publishing fr
     severity,
   };
 }
+
+/**
+ * Categorize error type (alias for backward compatibility)
+ */
+export function categorizeError(error: string): string {
+  // Simple categorization based on error message
+  const errorLower = error.toLowerCase();
+
+  if (errorLower.includes('auth') || errorLower.includes('token') || errorLower.includes('credentials')) {
+    return 'authentication';
+  }
+  if (errorLower.includes('rate') || errorLower.includes('429') || errorLower.includes('quota')) {
+    return 'rate_limit';
+  }
+  if (errorLower.includes('network') || errorLower.includes('timeout') || errorLower.includes('econnrefused')) {
+    return 'network';
+  }
+  if (errorLower.includes('validation') || errorLower.includes('invalid')) {
+    return 'validation';
+  }
+
+  return 'unknown';
+}

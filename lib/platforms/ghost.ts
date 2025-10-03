@@ -367,3 +367,4 @@ export async function testConnection(client: GhostClient): Promise<boolean> {
     return false;
   }
 }
+export function createGhostClient(config: any) { throw new Error('Ghost client not implemented'); }
