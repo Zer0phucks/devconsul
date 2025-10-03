@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { renderTemplateSchema } from '@/lib/validations/template';
 import { renderTemplate } from '@/lib/templates/engine';
@@ -15,7 +15,7 @@ import { renderTemplate } from '@/lib/templates/engine';
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getSession();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

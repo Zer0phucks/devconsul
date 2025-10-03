@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 export function SignupForm() {
   const router = useRouter();
@@ -18,6 +18,7 @@ export function SignupForm() {
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const supabase = createClient();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -43,33 +44,29 @@ export function SignupForm() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+          },
         },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "Failed to create account");
+      if (signUpError) {
+        setError(signUpError.message || "Failed to create account");
         setIsLoading(false);
         return;
       }
 
-      const result = await signIn("credentials", {
+      // Auto sign in after signup
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
-        redirect: false,
       });
 
-      if (result?.error) {
+      if (signInError) {
         setError("Account created but login failed. Please try logging in.");
         router.push("/login");
       } else {
@@ -86,7 +83,17 @@ export function SignupForm() {
   const handleOAuthSignIn = async (provider: "google" | "github") => {
     setIsLoading(true);
     try {
-      await signIn(provider, { callbackUrl: "/admin" });
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=/admin`,
+        },
+      });
+
+      if (error) {
+        setError("OAuth sign in failed. Please try again.");
+        setIsLoading(false);
+      }
     } catch (error) {
       setError("OAuth sign in failed. Please try again.");
       setIsLoading(false);

@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { dryRunPublish, executeDryRun } from '@/lib/publishing';
 import { dryRunPublishSchema } from '@/lib/validations/publishing';
 import { z } from 'zod';
@@ -22,7 +22,7 @@ const comprehensiveDryRunSchema = dryRunPublishSchema.extend({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

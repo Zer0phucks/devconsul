@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { validateLength, PLATFORM_LIMITS } from '@/lib/platforms/limits';
 import { validateHashtags, calculateHashtagScore } from '@/lib/utils/hashtag-injector';
 import { extractUrls, isValidUrl } from '@/lib/utils/link-shortener';
@@ -12,7 +12,7 @@ import { extractUrls, isValidUrl } from '@/lib/utils/link-shortener';
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { auth } from '@/lib/auth-helpers';
+import { getSession } from '@/lib/auth-helpers';
 import { processImageForPlatform } from '@/lib/image-processing/platform-specs';
 import { uploadImage } from '@/lib/storage/image-storage';
 

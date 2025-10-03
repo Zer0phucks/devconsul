@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { webhookPublishSchema } from '@/lib/validations/blog-platforms';
 import { sendWebhook, type WebhookConfig } from '@/lib/platforms/webhook';
@@ -12,7 +12,7 @@ import { decrypt } from '@/lib/platforms/encryption';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

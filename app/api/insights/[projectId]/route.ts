@@ -5,8 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth-helpers';
-import { authOptions } from '@/lib/auth-helpers';
+import { getSession } from "@/lib/auth";
 import { prisma } from '@/lib/db';
 import { createGitHubClient } from '@/lib/github/client';
 import { generateRepositoryInsights } from '@/lib/github/insights';

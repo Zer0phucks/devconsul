@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { createPromptSchema, queryPromptsSchema } from '@/lib/validations/prompt';
 import { validatePromptQuality } from '@/lib/validations/prompt';
@@ -16,7 +16,7 @@ import { validatePromptQuality } from '@/lib/validations/prompt';
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getSession();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getSession();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

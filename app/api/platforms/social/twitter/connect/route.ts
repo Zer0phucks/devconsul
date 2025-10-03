@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getSession } from "@/lib/auth-helpers";
 import crypto from 'crypto';
 
 const TWITTER_CLIENT_ID = process.env.TWITTER_CLIENT_ID!;
@@ -24,7 +24,7 @@ function sha256(buffer: string): Buffer {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

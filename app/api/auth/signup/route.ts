@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createUser } from "@/lib/auth";
+import { signUpWithPassword } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,21 +30,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await createUser(email, password, name);
+    const result = await signUpWithPassword(email, password, { name });
 
     return NextResponse.json(
       {
         message: "User created successfully",
         user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
+          id: result.user?.id,
+          email: result.user?.email,
+          name: result.user?.user_metadata?.name,
         },
       },
       { status: 201 }
     );
   } catch (error: any) {
-    if (error.message === "User already exists") {
+    if (error.message?.includes("already registered")) {
       return NextResponse.json(
         { error: "User with this email already exists" },
         { status: 409 }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     console.error("Signup error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error.message || "Internal server error" },
       { status: 500 }
     );
   }

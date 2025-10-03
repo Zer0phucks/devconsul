@@ -9,7 +9,7 @@ import { generateAltText } from '@/lib/ai/alt-text';
 import { uploadImageFromUrl } from '@/lib/storage/image-storage';
 import { processImageForPlatform } from '@/lib/image-processing/platform-specs';
 import { prisma } from '@/lib/db';
-import { auth } from '@/lib/auth-helpers';
+import { getSession } from '@/lib/auth-helpers';
 
 export async function POST(req: NextRequest) {
   try {

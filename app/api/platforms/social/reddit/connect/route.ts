@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { getSession } from "@/lib/auth-helpers";
 import crypto from 'crypto';
 
 const REDDIT_CLIENT_ID = process.env.REDDIT_CLIENT_ID!;
@@ -12,7 +12,7 @@ const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/platforms/social/re
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

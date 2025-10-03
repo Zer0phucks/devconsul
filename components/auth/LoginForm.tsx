@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm() {
   const router = useRouter();
@@ -14,6 +14,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,13 +22,12 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      const result = await signIn("credentials", {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
-        redirect: false,
       });
 
-      if (result?.error) {
+      if (signInError) {
         setError("Invalid email or password");
       } else {
         router.push("/admin");
@@ -43,7 +43,17 @@ export function LoginForm() {
   const handleOAuthSignIn = async (provider: "google" | "github") => {
     setIsLoading(true);
     try {
-      await signIn(provider, { callbackUrl: "/admin" });
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=/admin`,
+        },
+      });
+
+      if (error) {
+        setError("OAuth sign in failed. Please try again.");
+        setIsLoading(false);
+      }
     } catch (error) {
       setError("OAuth sign in failed. Please try again.");
       setIsLoading(false);

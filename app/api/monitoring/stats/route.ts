@@ -5,8 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth-helpers';
-import { authOptions } from '@/lib/auth-helpers';
+import { getSession } from "@/lib/auth";
 import { prisma } from '@/lib/db';
 import { apiErrorHandler } from '@/lib/monitoring/error-handler';
 import { AuthorizationError } from '@/lib/monitoring/sentry';
@@ -209,7 +208,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     return apiErrorHandler(error as Error, request, {
-      userId: (await getServerSession(authOptions))?.user?.id,
+      userId: (await getSession())?.user?.id,
     });
   }
 }

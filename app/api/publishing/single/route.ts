@@ -5,13 +5,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { publishToSinglePlatform } from '@/lib/publishing';
 import { publishToSinglePlatformSchema } from '@/lib/validations/publishing';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

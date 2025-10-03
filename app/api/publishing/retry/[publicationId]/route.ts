@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { retryFailedPublication } from '@/lib/publishing';
 import { z } from 'zod';
 
@@ -18,7 +18,7 @@ export async function POST(
   { params }: { params: { publicationId: string } }
 ) {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

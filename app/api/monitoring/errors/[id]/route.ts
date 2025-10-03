@@ -7,8 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth-helpers';
-import { authOptions } from '@/lib/auth-helpers';
+import { getSession } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
 import { apiErrorHandler, createNotFoundError } from '@/lib/monitoring/error-handler';
 import { AuthorizationError, ValidationError } from '@/lib/monitoring/sentry';
@@ -44,7 +43,7 @@ export async function GET(
     return NextResponse.json({ error });
   } catch (error) {
     return apiErrorHandler(error as Error, request, {
-      userId: (await getServerSession(authOptions))?.user?.id,
+      userId: (await getSession())?.user?.id,
     });
   }
 }
@@ -125,7 +124,7 @@ export async function PATCH(
     return NextResponse.json({ error: updatedError });
   } catch (error) {
     return apiErrorHandler(error as Error, request, {
-      userId: (await getServerSession(authOptions))?.user?.id,
+      userId: (await getSession())?.user?.id,
     });
   }
 }
@@ -179,7 +178,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     return apiErrorHandler(error as Error, request, {
-      userId: (await getServerSession(authOptions))?.user?.id,
+      userId: (await getSession())?.user?.id,
     });
   }
 }

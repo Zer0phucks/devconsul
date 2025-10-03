@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 import { getMediumOAuthUrl } from '@/lib/platforms/medium';
@@ -16,7 +16,7 @@ const connectSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

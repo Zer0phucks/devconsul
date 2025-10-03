@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import {
   createResendClientFromPlatform,
@@ -17,7 +16,6 @@ import { filterUnsubscribedEmails } from '@/lib/platforms/unsubscribe';
 // GET /api/platforms/email - Get email platforms for project
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -70,7 +68,6 @@ export async function GET(req: NextRequest) {
 // POST /api/platforms/email - Send email or create campaign
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import {
   ContentTransformationEngine,
   transformToMultiplePlatforms,
@@ -21,7 +21,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

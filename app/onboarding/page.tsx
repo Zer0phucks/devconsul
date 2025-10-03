@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSupabaseUser } from "@/lib/hooks/useSupabaseUser";
 import { WizardContainer } from "@/components/onboarding/wizard-container";
 import { Step1Welcome } from "@/components/onboarding/steps/step-1-welcome";
 import { Step2GitHub } from "@/components/onboarding/steps/step-2-github";
@@ -21,7 +21,7 @@ import { OnboardingProgress } from "@/lib/onboarding/types";
 import { OnboardingState } from "@/lib/onboarding/state";
 
 export default function OnboardingPage() {
-  const { data: session, status } = useSession();
+  const { user, status, loading: authLoading } = useSupabaseUser();
   const router = useRouter();
   const [progress, setProgress] = useState<OnboardingProgress | null>(null);
   const [loading, setLoading] = useState(true);

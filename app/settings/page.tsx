@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSupabaseUser } from "@/lib/hooks/useSupabaseUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
-  const { data: session, status } = useSession();
+  const { user, status } = useSupabaseUser();
   const router = useRouter();
+  const supabase = createClient();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -25,14 +27,14 @@ export default function SettingsPage() {
     if (status === "unauthenticated") {
       router.push("/login");
     }
-    if (session?.user) {
+    if (user) {
       setFormData((prev) => ({
         ...prev,
-        name: session.user.name || "",
-        email: session.user.email || "",
+        name: user.user_metadata?.name || "",
+        email: user.email || "",
       }));
     }
-  }, [session, status, router]);
+  }, [user, status, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({

@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { auth } from '@/lib/auth-helpers';
+import { getSession } from '@/lib/auth-helpers';
 import { generateAltText } from '@/lib/ai/alt-text';
 
 export async function POST(
