@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MetricsCard } from '@/components/analytics/metrics-card';
 import { ContentChart } from '@/components/analytics/content-chart';
@@ -23,7 +23,7 @@ import {
   Activity,
 } from 'lucide-react';
 
-export default function AnalyticsPage() {
+function AnalyticsDashboard() {
   const searchParams = useSearchParams();
   const projectId = searchParams.get('projectId');
 
@@ -341,5 +341,17 @@ export default function AnalyticsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AnalyticsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center p-8">
+        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <AnalyticsDashboard />
+    </Suspense>
   );
 }
