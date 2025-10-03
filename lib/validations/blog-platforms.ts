@@ -85,9 +85,8 @@ export const mediumPublishSchema = z.object({
 });
 
 // Webhook schemas
-export const webhookConfigureSchema = z.object({
-  projectId: z.string().cuid(),
-  name: z.string().min(1),
+export const webhookConfigSchema = z.object({
+  platformName: z.string().min(1).max(100),
   url: z.string().url(),
   method: z.enum(['POST', 'PUT', 'PATCH']).default('POST'),
   headers: z.record(z.string()).optional(),
@@ -100,7 +99,10 @@ export const webhookConfigureSchema = z.object({
 export const webhookPublishSchema = z.object({
   platformId: z.string().cuid(),
   contentId: z.string().cuid(),
-  dryRun: z.boolean().default(false), // Test mode
+  options: z.object({
+    tags: z.array(z.string()).optional(),
+    metadata: z.record(z.any()).optional(),
+  }).optional(),
 });
 
 // Content formatting options
@@ -144,7 +146,7 @@ export type GhostConnectInput = z.infer<typeof ghostConnectSchema>;
 export type GhostPublishInput = z.infer<typeof ghostPublishSchema>;
 export type MediumConnectInput = z.infer<typeof mediumConnectSchema>;
 export type MediumPublishInput = z.infer<typeof mediumPublishSchema>;
-export type WebhookConfigureInput = z.infer<typeof webhookConfigureSchema>;
+export type WebhookConfigInput = z.infer<typeof webhookConfigSchema>;
 export type WebhookPublishInput = z.infer<typeof webhookPublishSchema>;
 export type ContentFormatOptions = z.infer<typeof contentFormatOptionsSchema>;
 export type PublishResponse = z.infer<typeof publishResponseSchema>;
