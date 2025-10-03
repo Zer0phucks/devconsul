@@ -9,50 +9,74 @@
  * - Custom error categorization
  */
 
-import * as Sentry from '@sentry/nextjs';
-import { prisma } from '@/lib/db';
-import { ErrorLevel, ErrorStatus } from '@prisma/client';
-import crypto from 'crypto';
+import * as Sentry from "@sentry/nextjs";
+import { prisma } from "@/lib/db";
+import { ErrorLevel, ErrorStatus } from "@prisma/client";
+import crypto from "crypto";
+
+const globalSentryState = globalThis as typeof globalThis & {
+  __DEVCONSUL_SENTRY_INITIALIZED__?: boolean;
+  __DEVCONSUL_SENTRY_REPLAY_INITIALIZED__?: boolean;
+};
 
 // Sentry configuration
 export function initSentry() {
-  if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-    Sentry.init({
-      dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-      environment: process.env.NODE_ENV || 'development',
-      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-
-      // Capture errors in these environments
-      enabled: process.env.NODE_ENV !== 'test',
-
-      // Release tracking
-      release: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
-
-      // Additional options
-      beforeSend(event, hint) {
-        // Filter out sensitive data
-        if (event.request) {
-          delete event.request.cookies;
-          delete event.request.headers;
-        }
-
-        // Add custom context
-        return event;
-      },
-
-      // Integrations
-      integrations: [
-        Sentry.browserTracingIntegration(),
-        Sentry.replayIntegration({
-          maskAllText: true,
-          blockAllMedia: true,
-        }),
-      ],
-
-      // Performance monitoring
-      profilesSampleRate: 0.1,
-    });
+  if (!process.env.NEXT_PUBLIC_SENTRY_DSN) {
+    return;
   }
+
+  if (globalSentryState.__DEVCONSUL_SENTRY_INITIALIZED__) {
+    return;
+  }
+
+  const existingClient = Sentry.getCurrentHub().getClient();
+  if (existingClient) {
+    globalSentryState.__DEVCONSUL_SENTRY_INITIALIZED__ = true;
+    return;
+  }
+
+  const integrations = [Sentry.browserTracingIntegration()];
+  const isBrowser = typeof window !== "undefined";
+
+  if (isBrowser && !globalSentryState.__DEVCONSUL_SENTRY_REPLAY_INITIALIZED__) {
+    integrations.push(Sentry.replayIntegration({
+      maskAllText: true,
+      blockAllMedia: true,
+    }));
+    globalSentryState.__DEVCONSUL_SENTRY_REPLAY_INITIALIZED__ = true;
+  }
+
+  Sentry.init({
+    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    environment: process.env.NODE_ENV || "development",
+    tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+
+    // Capture errors in these environments
+    enabled: process.env.NODE_ENV !== "test",
+
+    // Release tracking
+    release: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
+
+    // Additional options
+    beforeSend(event) {
+      // Filter out sensitive data
+      if (event.request) {
+        delete event.request.cookies;
+        delete event.request.headers;
+      }
+
+      // Add custom context
+      return event;
+    },
+
+    // Integrations
+    integrations,
+
+    // Performance monitoring
+    profilesSampleRate: 0.1,
+  });
+
+  globalSentryState.__DEVCONSUL_SENTRY_INITIALIZED__ = true;
 }
 
 /**
@@ -123,6 +147,7 @@ export async function captureError(
     };
   }
 ) {
+  initSentry();
   try {
     // Capture to Sentry
     const sentryEventId = Sentry.captureException(error, {
@@ -202,6 +227,7 @@ export function setUserContext(user: {
   email?: string;
   name?: string;
 }) {
+  initSentry();
   Sentry.setUser({
     id: user.id,
     email: user.email,
@@ -213,6 +239,7 @@ export function setUserContext(user: {
  * Clear user context (on logout)
  */
 export function clearUserContext() {
+  initSentry();
   Sentry.setUser(null);
 }
 
@@ -225,6 +252,7 @@ export function addBreadcrumb(
   level?: 'debug' | 'info' | 'warning' | 'error',
   data?: Record<string, any>
 ) {
+  initSentry();
   Sentry.addBreadcrumb({
     message,
     category,

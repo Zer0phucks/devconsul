@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import '@anthropic-ai/sdk/shims/node'
 
 // Mock environment variables for tests
 process.env.NEXTAUTH_URL = 'http://localhost:3000'
