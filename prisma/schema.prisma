@@ -1,0 +1,716 @@
+// Prisma Schema for Full Self Publishing Platform
+// Database provider: PostgreSQL (Supabase/Neon compatible)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  emailVerified DateTime?
+  image         String?
+  password      String? // For credentials auth
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // User preferences and settings
+  preferences Json? // Flexible JSON for UI preferences, themes, etc.
+  timezone    String  @default("UTC")
+  isActive    Boolean @default(true)
+
+  // Relationships
+  accounts Account[]
+  projects Project[]
+  settings Settings[]
+  sessions Session[]
+
+  @@index([email])
+  @@index([createdAt])
+  @@map("users")
+}
+
+// NextAuth account model
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+// NextAuth session model
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// NextAuth verification token model
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================
+// PROJECT MANAGEMENT
+// ============================================
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // GitHub Integration
+  githubRepoUrl   String?
+  githubRepoOwner String?
+  githubRepoName  String?
+  githubBranch    String?   @default("main")
+  githubWebhookId String? // Store webhook ID for cleanup
+  lastSyncedAt    DateTime?
+  syncEnabled     Boolean   @default(false)
+
+  // Project metadata
+  status     ProjectStatus @default(ACTIVE)
+  visibility Visibility    @default(PRIVATE)
+  tags       String[] // Array of tags for categorization
+  metadata   Json? // Flexible metadata storage
+
+  // Relationships
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platforms      Platform[]
+  content        Content[]
+  settings       Settings[]
+  cronJobs       CronJob[]
+  emailCampaigns EmailCampaign[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([githubRepoOwner, githubRepoName])
+  @@map("projects")
+}
+
+enum ProjectStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  DELETED
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+  UNLISTED
+}
+
+// ============================================
+// PLATFORM INTEGRATIONS
+// ============================================
+
+model Platform {
+  id        String       @id @default(cuid())
+  projectId String
+  type      PlatformType
+  name      String // Custom name for this platform connection
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  // OAuth & API credentials (encrypted in production)
+  accessToken    String?   @db.Text
+  refreshToken   String?   @db.Text
+  tokenExpiresAt DateTime?
+  apiKey         String?   @db.Text
+  apiSecret      String?   @db.Text
+
+  // Platform-specific configuration
+  config Json? // Platform-specific settings (RSS URL, webhook URLs, etc.)
+
+  // Connection status
+  isConnected     Boolean   @default(false)
+  lastConnectedAt DateTime?
+  lastErrorAt     DateTime?
+  lastError       String?   @db.Text
+
+  // Publishing stats
+  totalPublished  Int       @default(0)
+  lastPublishedAt DateTime?
+
+  // Relationships
+  project      Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  publications ContentPublication[]
+
+  @@unique([projectId, type]) // One platform type per project
+  @@index([projectId])
+  @@index([type])
+  @@index([isConnected])
+  @@map("platforms")
+}
+
+enum PlatformType {
+  HASHNODE
+  DEVTO
+  MEDIUM
+  LINKEDIN
+  TWITTER
+  RSS_FEED
+  NEWSLETTER
+  RESEND
+  SENDGRID
+  MAILCHIMP
+  WORDPRESS
+  GHOST
+  WEBHOOK
+}
+
+// ============================================
+// CONTENT MANAGEMENT
+// ============================================
+
+model Content {
+  id        String   @id @default(cuid())
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Source content (from GitHub)
+  sourceType      ContentSourceType
+  sourcePath      String? // GitHub file path
+  sourceCommitSha String? // Git commit SHA for tracking
+
+  // Content data
+  title       String
+  slug        String?
+  excerpt     String? @db.Text
+  body        String  @db.Text
+  rawContent  String  @db.Text // Original markdown/content
+  htmlContent String? @db.Text // Rendered HTML
+
+  // Metadata
+  tags         String[]
+  categories   String[]
+  coverImage   String?
+  canonicalUrl String?
+
+  // Content status
+  status       ContentStatus @default(DRAFT)
+  publishedAt  DateTime?
+  scheduledFor DateTime?
+
+  // AI generation metadata
+  isAIGenerated Boolean @default(false)
+  aiModel       String?
+  aiPrompt      String? @db.Text
+  aiMetadata    Json?
+
+  // Version control
+  version  Int       @default(1)
+  parentId String? // For content versions
+  parent   Content?  @relation("ContentVersions", fields: [parentId], references: [id])
+  versions Content[] @relation("ContentVersions")
+
+  // Relationships
+  project      Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  publications ContentPublication[]
+
+  @@index([projectId])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([scheduledFor])
+  @@index([sourceCommitSha])
+  @@index([createdAt])
+  @@map("content")
+}
+
+enum ContentSourceType {
+  GITHUB_MARKDOWN
+  GITHUB_MDX
+  AI_GENERATED
+  MANUAL
+  IMPORT
+}
+
+enum ContentStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  FAILED
+  ARCHIVED
+}
+
+// Content publication tracking (many-to-many with platforms)
+model ContentPublication {
+  id         String   @id @default(cuid())
+  contentId  String
+  platformId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Publication details
+  publishedAt    DateTime?
+  platformPostId String? // ID from the platform (e.g., Hashnode post ID)
+  platformUrl    String? // Direct URL to published content
+
+  // Status
+  status        PublicationStatus @default(PENDING)
+  error         String?           @db.Text
+  retryCount    Int               @default(0)
+  lastAttemptAt DateTime?
+
+  // Platform-specific metadata
+  platformMetadata Json?
+
+  // Relationships
+  content  Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, platformId])
+  @@index([contentId])
+  @@index([platformId])
+  @@index([status])
+  @@index([publishedAt])
+  @@map("content_publications")
+}
+
+enum PublicationStatus {
+  PENDING
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  RETRYING
+}
+
+// ============================================
+// SETTINGS & CONFIGURATION
+// ============================================
+
+model Settings {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Settings scope
+  scope SettingsScope @default(PROJECT)
+
+  // Content generation settings
+  contentPreferences Json? // AI model, tone, style, length preferences
+
+  // Publishing automation
+  autoPublish    Boolean @default(false)
+  publishDelay   Int? // Minutes to wait before auto-publishing
+  contentFilters Json? // Filters for which content to publish
+
+  // Scheduling settings
+  cronFrequency      String? // Cron expression for content checks
+  timezone           String  @default("UTC")
+  publishingSchedule Json? // Preferred publishing times
+
+  // Notification settings
+  emailNotifications Boolean  @default(true)
+  webhookUrl         String?
+  notificationEvents String[] // Array of events to notify about
+
+  // Advanced settings
+  customSettings Json? // Flexible key-value storage
+
+  // Relationships
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId, scope])
+  @@index([userId])
+  @@index([projectId])
+  @@map("settings")
+}
+
+enum SettingsScope {
+  USER
+  PROJECT
+  PLATFORM
+}
+
+// ============================================
+// CRON JOBS & AUTOMATION
+// ============================================
+
+model CronJob {
+  id        String   @id @default(cuid())
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Job configuration
+  name        String
+  description String?     @db.Text
+  type        CronJobType
+  schedule    String // Cron expression
+  timezone    String      @default("UTC")
+
+  // Job status
+  isEnabled Boolean       @default(true)
+  status    CronJobStatus @default(IDLE)
+
+  // Execution tracking
+  lastRunAt    DateTime?
+  lastSuccess  DateTime?
+  lastFailure  DateTime?
+  nextRunAt    DateTime?
+  runCount     Int       @default(0)
+  successCount Int       @default(0)
+  failureCount Int       @default(0)
+
+  // Error handling
+  maxRetries Int @default(3)
+  retryDelay Int @default(300) // Seconds
+
+  // Job configuration
+  config Json? // Job-specific configuration
+
+  // Relationships
+  project    Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  executions CronExecution[]
+
+  @@index([projectId])
+  @@index([isEnabled])
+  @@index([status])
+  @@index([nextRunAt])
+  @@index([type])
+  @@map("cron_jobs")
+}
+
+enum CronJobType {
+  SYNC_GITHUB // Sync content from GitHub
+  PUBLISH_CONTENT // Auto-publish scheduled content
+  GENERATE_CONTENT // AI content generation
+  CLEANUP // Database cleanup
+  ANALYTICS // Generate analytics
+  CUSTOM // User-defined job
+}
+
+enum CronJobStatus {
+  IDLE
+  RUNNING
+  COMPLETED
+  FAILED
+  DISABLED
+}
+
+// Cron job execution logs
+model CronExecution {
+  id        String   @id @default(cuid())
+  jobId     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Execution details
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  duration    Int? // Milliseconds
+
+  // Status
+  status     ExecutionStatus @default(RUNNING)
+  error      String?         @db.Text
+  stackTrace String?         @db.Text
+
+  // Execution metadata
+  triggeredBy String? // manual, scheduled, webhook
+  metadata    Json?
+
+  // Execution results
+  itemsProcessed Int?
+  itemsSuccess   Int?
+  itemsFailed    Int?
+  output         Json? // Execution output/results
+
+  // Relationships
+  job CronJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([status])
+  @@index([startedAt])
+  @@index([createdAt])
+  @@map("cron_executions")
+}
+
+enum ExecutionStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  TIMEOUT
+}
+
+// ============================================
+// AUDIT & ANALYTICS
+// ============================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Actor information
+  userId    String?
+  userEmail String?
+  ipAddress String?
+  userAgent String? @db.Text
+
+  // Action details
+  action     String // create, update, delete, publish, etc.
+  resource   AuditResource
+  resourceId String
+
+  // Changes
+  oldValues Json?
+  newValues Json?
+  metadata  Json?
+
+  // Context
+  projectId  String?
+  platformId String?
+
+  @@index([userId])
+  @@index([resource, resourceId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum AuditResource {
+  USER
+  PROJECT
+  PLATFORM
+  CONTENT
+  SETTINGS
+  CRON_JOB
+  EMAIL_CAMPAIGN
+}
+
+// ============================================
+// EMAIL PLATFORMS & CAMPAIGNS
+// ============================================
+
+model EmailCampaign {
+  id        String   @id @default(cuid())
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Campaign details
+  name      String
+  subject   String
+  fromEmail String
+  fromName  String?
+  replyTo   String?
+
+  // Content
+  templateId  String? // Reference to email template
+  htmlContent String  @db.Text
+  textContent String? @db.Text
+
+  // Campaign metadata
+  tags     String[]
+  metadata Json?
+
+  // Status
+  status      EmailCampaignStatus @default(DRAFT)
+  scheduledAt DateTime?
+  sentAt      DateTime?
+
+  // Stats
+  totalRecipients   Int @default(0)
+  totalSent         Int @default(0)
+  totalDelivered    Int @default(0)
+  totalOpened       Int @default(0)
+  totalClicked      Int @default(0)
+  totalBounced      Int @default(0)
+  totalUnsubscribed Int @default(0)
+
+  // Platform (which email service to use)
+  emailProvider EmailProvider @default(RESEND)
+  platformId    String? // Reference to Platform if using platform config
+
+  // Relationships
+  project    Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  recipients EmailRecipient[]
+
+  @@index([projectId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([sentAt])
+  @@index([emailProvider])
+  @@map("email_campaigns")
+}
+
+enum EmailCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  PAUSED
+  CANCELLED
+  FAILED
+}
+
+enum EmailProvider {
+  RESEND
+  SENDGRID
+  MAILCHIMP
+}
+
+model EmailRecipient {
+  id         String   @id @default(cuid())
+  campaignId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Recipient details
+  email        String
+  name         String?
+  customFields Json? // Additional merge fields
+
+  // Tracking token (for unsubscribe, opens, clicks)
+  token String @unique @default(cuid())
+
+  // Status
+  status         EmailRecipientStatus @default(PENDING)
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  openedAt       DateTime?
+  clickedAt      DateTime?
+  bouncedAt      DateTime?
+  unsubscribedAt DateTime?
+
+  // Tracking
+  openCount  Int @default(0)
+  clickCount Int @default(0)
+
+  // Bounce/error info
+  bounceType String? // hard, soft, spam
+  errorMsg   String? @db.Text
+
+  // Relationships
+  campaign EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@map("email_recipients")
+}
+
+enum EmailRecipientStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  FAILED
+  UNSUBSCRIBED
+}
+
+// Global unsubscribe list (cross-project)
+model EmailUnsubscribe {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  email          String   @unique
+  unsubscribedAt DateTime @default(now())
+
+  // Reason
+  reason String? @db.Text
+
+  // Source (which campaign/project they unsubscribed from)
+  projectId  String?
+  campaignId String?
+
+  // Token used to unsubscribe
+  token String?
+
+  // User can re-subscribe
+  isActive       Boolean   @default(true)
+  resubscribedAt DateTime?
+
+  @@index([email])
+  @@index([isActive])
+  @@index([projectId])
+  @@map("email_unsubscribes")
+}
+
+// Email templates
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  projectId String? // null = global template
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Template details
+  name        String
+  description String? @db.Text
+  subject     String? // Default subject
+
+  // Content
+  htmlContent String  @db.Text
+  textContent String? @db.Text
+
+  // Template type
+  type EmailTemplateType @default(CUSTOM)
+
+  // Variables/merge tags this template uses
+  variables String[] // e.g., ["name", "content", "unsubscribe"]
+
+  // Template metadata
+  category String?
+  tags     String[]
+  isPublic Boolean  @default(false)
+
+  @@index([projectId])
+  @@index([type])
+  @@index([isPublic])
+  @@map("email_templates")
+}
+
+enum EmailTemplateType {
+  NEWSLETTER
+  ANNOUNCEMENT
+  DIGEST
+  PLAIN
+  CUSTOM
+}
