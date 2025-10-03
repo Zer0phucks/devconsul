@@ -1,4 +1,4 @@
-import { withAuth } from "next-auth/middleware";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createAuditLog } from "@/lib/monitoring/audit";
@@ -112,37 +112,42 @@ async function auditRequest(req: NextRequest, userId?: string, userEmail?: strin
   }
 }
 
-export default withAuth(
-  async function middleware(req) {
-    // Get user info from token
-    const token = req.nextauth.token;
-    const userId = token?.sub;
-    const userEmail = token?.email as string | undefined;
+// Define protected routes
+const isProtectedRoute = createRouteMatcher([
+  "/admin(.*)",
+  "/settings(.*)",
+  "/dashboard(.*)",
+  "/api/projects(.*)",
+  "/api/content(.*)",
+  "/api/platforms(.*)",
+  "/api/settings(.*)",
+  "/api/cron(.*)",
+  "/api/email(.*)",
+  "/api/user(.*)",
+]);
 
-    // Audit the request
-    await auditRequest(req, userId, userEmail);
-
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
+export default clerkMiddleware(async (auth, req) => {
+  // Protect routes that require authentication
+  if (isProtectedRoute(req)) {
+    await auth.protect();
   }
-);
 
-// Protected routes configuration
+  // Get user info from auth
+  const { userId } = await auth();
+
+  // Audit the request if user is authenticated
+  if (userId) {
+    await auditRequest(req, userId, undefined);
+  }
+
+  return NextResponse.next();
+});
+
 export const config = {
   matcher: [
-    "/admin/:path*",
-    "/settings/:path*",
-    "/dashboard/:path*",
-    "/api/projects/:path*",
-    "/api/content/:path*",
-    "/api/platforms/:path*",
-    "/api/settings/:path*",
-    "/api/cron/:path*",
-    "/api/email/:path*",
-    "/api/user/:path*",
+    // Skip Next.js internals and all static files, unless found in search params
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // Always run for API routes
+    "/(api|trpc)(.*)",
   ],
 };
