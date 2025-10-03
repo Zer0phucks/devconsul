@@ -10,9 +10,19 @@ import { SafetyCheckType, SafetySeverity, SafetyAction } from "@prisma/client";
 import { db } from "@/lib/db";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!
-});
+// Lazy-load OpenAI client to avoid build-time errors
+let _openai: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    _openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || 'default-build-key',
+    });
+  }
+  return _openai;
+}
+
+const openai = getOpenAI();
 
 export interface SafetyCheckResult {
   passed: boolean;

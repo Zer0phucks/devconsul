@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { getSession } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 import { sendWebhook, type WebhookConfig } from '@/lib/platforms/webhook';

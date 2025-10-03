@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { getSession } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import { renderTemplateSchema } from '@/lib/validations/template';
 import { renderTemplate } from '@/lib/templates/engine';

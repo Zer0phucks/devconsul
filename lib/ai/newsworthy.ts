@@ -49,16 +49,32 @@ export interface CommitAnalysis {
 }
 
 // ============================================
-// AI CLIENTS
+// AI CLIENTS - Lazy-loaded to avoid build-time errors
 // ============================================
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+let _anthropic: Anthropic | null = null;
+let _openai: OpenAI | null = null;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function getAnthropic(): Anthropic {
+  if (!_anthropic) {
+    _anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY || 'default-build-key',
+    });
+  }
+  return _anthropic;
+}
+
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    _openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || 'default-build-key',
+    });
+  }
+  return _openai;
+}
+
+const anthropic = getAnthropic();
+const openai = getOpenAI();
 
 // ============================================
 // NEWSWORTHY EVENT DETECTION

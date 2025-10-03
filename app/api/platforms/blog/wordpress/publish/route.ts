@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { getSession } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
 import { wordpressPublishSchema } from '@/lib/validations/blog-platforms';
 import { createPost, type WordPressClient } from '@/lib/platforms/wordpress';

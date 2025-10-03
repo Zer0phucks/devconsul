@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { getSession } from '@/lib/auth-helpers';
 import { publishToMultiplePlatforms } from '@/lib/publishing';
 import { publishToMultiplePlatformsSchema } from '@/lib/validations/publishing';
 

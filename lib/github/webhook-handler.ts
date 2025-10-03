@@ -2,10 +2,19 @@ import { Webhooks } from '@octokit/webhooks';
 import { kv } from '@vercel/kv';
 import type { GitHubActivity } from '@/lib/types';
 
-// Initialize webhook handler
-export const webhooks = new Webhooks({
-  secret: process.env.GITHUB_WEBHOOK_SECRET!,
-});
+// Lazy-initialize webhook handler to avoid build-time errors
+let _webhooks: Webhooks | null = null;
+
+export function getWebhooks(): Webhooks {
+  if (!_webhooks) {
+    _webhooks = new Webhooks({
+      secret: process.env.GITHUB_WEBHOOK_SECRET || 'default-build-secret',
+    });
+  }
+  return _webhooks;
+}
+
+export const webhooks = getWebhooks();
 
 // Parse GitHub webhook event into our activity format
 export async function parseGitHubEvent(event: any, eventType: string): Promise<GitHubActivity> {

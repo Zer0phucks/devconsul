@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { getSession } from '@/lib/auth-helpers';
 import { validateLength, PLATFORM_LIMITS } from '@/lib/platforms/limits';
 import { validateHashtags, calculateHashtagScore } from '@/lib/utils/hashtag-injector';
 import { extractUrls, isValidUrl } from '@/lib/utils/link-shortener';
