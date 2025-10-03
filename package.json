@@ -22,6 +22,7 @@
     "@anthropic-ai/sdk": "^0.27.3",
     "@auth/prisma-adapter": "^2.10.0",
     "@hookform/resolvers": "^5.2.2",
+    "axios": "^1.7.9",
     "@mailchimp/mailchimp_marketing": "^3.0.80",
     "@octokit/rest": "^22.0.0",
     "@octokit/webhooks": "^14.1.3",
