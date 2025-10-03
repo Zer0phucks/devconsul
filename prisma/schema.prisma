@@ -1254,3 +1254,852 @@ enum ConflictSeverity {
   ERROR // Must be resolved before proceeding
   CRITICAL // Blocking issue
 }
+
+// ============================================
+// REPORTING & EXPORT SYSTEM
+// ============================================
+
+// Report configuration for custom reports
+model ReportConfig {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Report details
+  name        String
+  description String? @db.Text
+
+  // Report type and format
+  reportType   ReportType
+  outputFormat ReportFormat @default(PDF)
+
+  // Report sections and configuration
+  sections     String[] // Array of section identifiers
+  metrics      String[] // Metrics to include
+  charts       String[] // Chart types to include
+  dateRange    Json? // Custom date range configuration
+
+  // Filters
+  platformFilters String[] // Filter by platforms
+  contentFilters  Json? // Filter by content type, status, etc.
+  customFilters   Json? // Custom filtering logic
+
+  // Scheduling and delivery
+  isScheduled      Boolean   @default(false)
+  schedulePattern  String? // Cron expression
+  deliveryMethod   String? // email, download, webhook
+  deliveryConfig   Json? // Email addresses, webhook URLs, etc.
+  lastGeneratedAt  DateTime?
+  nextScheduledAt  DateTime?
+
+  // Customization
+  branding Json? // Logo, colors, fonts
+  template String? // Template identifier
+  options  Json? // Additional report options
+
+  // Metadata
+  isPublic    Boolean @default(false)
+  tags        String[]
+  category    String?
+
+  // Relationships
+  history ReportHistory[]
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([reportType])
+  @@index([isScheduled])
+  @@index([nextScheduledAt])
+  @@map("report_configs")
+}
+
+enum ReportType {
+  EXECUTIVE_SUMMARY // High-level overview
+  CONTENT_PERFORMANCE // Content analytics
+  COST_ANALYSIS // AI and platform cost tracking
+  MONTHLY_DIGEST // Monthly summary
+  WEEKLY_DIGEST // Weekly summary
+  REPOSITORY_INSIGHTS // GitHub activity analysis
+  PUBLISHING_ANALYTICS // Publishing success rates
+  PLATFORM_BREAKDOWN // Per-platform analytics
+  CUSTOM // User-defined report
+}
+
+enum ReportFormat {
+  PDF // PDF document
+  CSV // CSV export
+  JSON // JSON data export
+  HTML // HTML report
+  ICAL // iCalendar format
+  ZIP // Compressed archive
+}
+
+// Report generation history and cache
+model ReportHistory {
+  id        String   @id @default(cuid())
+  configId  String?
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  // Report metadata
+  reportType   ReportType
+  outputFormat ReportFormat
+  reportName   String
+  description  String? @db.Text
+
+  // Generation details
+  generatedAt   DateTime   @default(now())
+  generationTime Int? // Milliseconds
+  dataFrom      DateTime // Start of date range
+  dataTo        DateTime // End of date range
+
+  // Storage
+  fileUrl      String? // URL to generated file
+  filePath     String? // Storage path
+  fileSize     Int? // Bytes
+  expiresAt    DateTime? // For temporary files
+
+  // Content summary
+  recordCount    Int? // Number of records included
+  platformsCount Int? // Number of platforms
+  contentCount   Int? // Number of content items
+  summary        Json? // Report summary data
+
+  // Status and errors
+  status       ReportStatus @default(PENDING)
+  error        String?      @db.Text
+  errorDetails Json?
+
+  // Delivery tracking
+  deliveredAt    DateTime?
+  deliveryMethod String? // email, download, webhook
+  deliveryStatus String? // sent, failed, pending
+  recipients     Json? // Email recipients or webhook URLs
+
+  // Inngest tracking
+  inngestJobId String?
+
+  // Relationships
+  config ReportConfig? @relation(fields: [configId], references: [id], onDelete: SetNull)
+
+  @@index([configId])
+  @@index([projectId])
+  @@index([userId])
+  @@index([reportType])
+  @@index([status])
+  @@index([generatedAt])
+  @@index([expiresAt])
+  @@map("report_history")
+}
+
+enum ReportStatus {
+  PENDING // Queued for generation
+  GENERATING // Currently generating
+  COMPLETED // Successfully generated
+  FAILED // Generation failed
+  EXPIRED // File has expired
+  CANCELLED // User cancelled
+}
+
+// Email report subscriptions
+model EmailReportSubscription {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Subscription details
+  reportType      EmailReportType
+  frequency       String // daily, weekly, monthly, custom
+  deliveryDay     Int? // Day of week (1-7) or month (1-31)
+  deliveryTime    String           @default("09:00") // HH:MM format
+  timezone        String           @default("UTC")
+
+  // Recipients
+  recipients String[] // Email addresses
+  ccRecipients String[] // CC email addresses
+
+  // Filters and customization
+  includeMetrics  String[] // Metrics to include
+  platformFilters String[] // Filter by platforms
+  minThreshold    Json? // Only send if metrics meet threshold
+
+  // Status
+  isActive        Boolean   @default(true)
+  lastSentAt      DateTime?
+  nextScheduledAt DateTime?
+  sendCount       Int       @default(0)
+  errorCount      Int       @default(0)
+  lastError       String?   @db.Text
+
+  // Inngest tracking
+  inngestScheduleId String?
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([reportType])
+  @@index([isActive])
+  @@index([nextScheduledAt])
+  @@map("email_report_subscriptions")
+}
+
+enum EmailReportType {
+  WEEKLY_SUMMARY // Weekly content summary
+  MONTHLY_DIGEST // Monthly analytics
+  BUDGET_ALERT // Cost threshold alerts
+  PERFORMANCE_HIGHLIGHTS // Top performing content
+  PUBLISHING_FAILURES // Failed publications
+  SCHEDULE_CONFLICTS // Scheduling conflicts
+  CUSTOM_METRICS // Custom metric report
+}
+
+// Export jobs tracking
+model ExportJob {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Export configuration
+  exportType   ExportType
+  outputFormat ReportFormat
+  name         String?
+  description  String? @db.Text
+
+  // Export parameters
+  dateFrom     DateTime?
+  dateTo       DateTime?
+  filters      Json? // Export filters
+  options      Json? // Export options
+
+  // Processing status
+  status         ExportStatus @default(PENDING)
+  progress       Int          @default(0) // 0-100
+  totalRecords   Int?
+  processedCount Int          @default(0)
+  errorCount     Int          @default(0)
+
+  // Results
+  fileUrl      String? // Download URL
+  filePath     String? // Storage path
+  fileSize     Int? // Bytes
+  expiresAt    DateTime? // Auto-delete after expiry
+
+  // Timing
+  startedAt   DateTime?
+  completedAt DateTime?
+  duration    Int? // Milliseconds
+
+  // Error handling
+  error        String? @db.Text
+  errorDetails Json?
+
+  // Inngest tracking
+  inngestJobId String?
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([exportType])
+  @@index([status])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("export_jobs")
+}
+
+enum ExportType {
+  CONTENT_HISTORY // All content with metadata
+  ANALYTICS_SNAPSHOT // Analytics data
+  SCHEDULED_CALENDAR // iCal calendar
+  IMAGE_LIBRARY // All images with metadata
+  PLATFORM_DATA // Platform-specific data
+  FULL_BACKUP // Complete project backup
+}
+
+enum ExportStatus {
+  PENDING // Queued
+  PROCESSING // In progress
+  COMPLETED // Successfully completed
+  FAILED // Failed
+  CANCELLED // User cancelled
+  EXPIRED // File expired
+}
+
+// ============================================
+// REPOSITORY INSIGHTS & ANALYTICS
+// ============================================
+
+// Repository insights and analytics
+model RepositoryInsights {
+  id        String   @id @default(cuid())
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Time period for this insight snapshot
+  periodStart DateTime
+  periodEnd   DateTime
+  periodType  InsightPeriod @default(DAILY)
+
+  // Activity metrics
+  totalCommits      Int @default(0)
+  totalPullRequests Int @default(0)
+  totalIssues       Int @default(0)
+  totalReleases     Int @default(0)
+
+  // Commit statistics
+  commitStats Json? // {additions, deletions, changedFiles, avgCommitSize}
+
+  // Pull request metrics
+  prStats Json? // {merged, closed, draft, avgMergeTime, avgReviewTime}
+
+  // Issue metrics
+  issueStats Json? // {opened, closed, avgCloseTime, staleIssues}
+
+  // Contributor data
+  contributorCount   Int   @default(0)
+  topContributors    Json? // Array of {login, commits, prs, avatar}
+  contributorDiversity Float? // Diversity score 0-1
+
+  // Language breakdown
+  languageStats Json? // {language: lines/percentage}
+
+  // File change analysis
+  fileChangeFrequency Json? // {filename: changeCount}
+  hotspots            Json? // Most changed files/directories
+
+  // Branch activity
+  branchStats Json? // {name, commitCount, lastActivity}
+
+  // Code velocity metrics
+  commitVelocity     Float? // Commits per week
+  prMergeRate        Float? // PRs merged per week
+  issueResolutionRate Float? // Issues closed per week
+
+  // Health score (0-100)
+  healthScore      Int?   @default(0)
+  healthFactors    Json? // Breakdown of health score factors
+  healthTrends     Json? // Historical health trend data
+
+  // Newsworthy items (AI-detected)
+  newsworthyItems Json? // Array of newsworthy events with scores
+
+  // Activity heatmap data
+  heatmapData Json? // Daily activity counts for visualization
+
+  // Cache metadata
+  cacheExpiresAt DateTime?
+  lastSyncedAt   DateTime?
+
+  @@index([projectId])
+  @@index([periodStart, periodEnd])
+  @@index([periodType])
+  @@index([healthScore])
+  @@index([cacheExpiresAt])
+  @@map("repository_insights")
+}
+
+enum InsightPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+// Detailed contributor statistics
+model ContributorStats {
+  id        String   @id @default(cuid())
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Contributor identity
+  githubLogin String
+  githubId    Int?
+  name        String?
+  email       String?
+  avatarUrl   String?
+
+  // Time period
+  periodStart DateTime
+  periodEnd   DateTime
+
+  // Contribution counts
+  totalCommits      Int @default(0)
+  totalPRs          Int @default(0)
+  totalIssues       Int @default(0)
+  totalReviews      Int @default(0)
+  totalReleases     Int @default(0)
+
+  // Code statistics
+  linesAdded    Int @default(0)
+  linesDeleted  Int @default(0)
+  filesChanged  Int @default(0)
+
+  // Engagement metrics
+  firstContribution DateTime?
+  lastContribution  DateTime?
+  activeStreaks     Json? // Array of {start, end, days}
+  contributionDays  Int   @default(0) // Unique days with contributions
+
+  // PR metrics
+  prsMerged       Int @default(0)
+  prsReviewed     Int @default(0)
+  avgPRSize       Float? // Average lines changed per PR
+  avgReviewTime   Float? // Average hours to review
+
+  // Issue metrics
+  issuesOpened  Int @default(0)
+  issuesClosed  Int @default(0)
+  issuesCommented Int @default(0)
+
+  // Language expertise
+  languageBreakdown Json? // {language: commitCount}
+
+  // Impact score (0-100)
+  impactScore  Int?  @default(0)
+  impactFactors Json? // Breakdown of impact calculation
+
+  // Activity patterns
+  activityByDay    Json? // {Monday: count, ...}
+  activityByHour   Json? // {0: count, 1: count, ...}
+  peakActivityTime String? // "weekday_morning", "weekend_evening"
+
+  @@unique([projectId, githubLogin, periodStart, periodEnd])
+  @@index([projectId])
+  @@index([githubLogin])
+  @@index([periodStart, periodEnd])
+  @@index([impactScore])
+  @@map("contributor_stats")
+}
+
+// Newsworthy events detection
+model NewsworthyEvent {
+  id        String   @id @default(cuid())
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Event details
+  eventType     NewsworthyType
+  eventDate     DateTime
+  title         String
+  description   String         @db.Text
+  htmlUrl       String? // GitHub URL to event
+
+  // Event data (commit SHA, PR number, issue number, etc.)
+  eventData Json
+
+  // AI analysis
+  newsworthinessScore Float  @default(0) // 0-1 confidence score
+  aiReasoning         String @db.Text // Why AI thinks this is newsworthy
+  aiModel             String? // Model used for detection
+
+  // Classification
+  category    String[] // ["feature", "bugfix", "breaking_change", "security"]
+  impact      EventImpact @default(MEDIUM)
+  tags        String[]
+
+  // User feedback
+  userRating       Int? // 1-5 stars, did user find this useful?
+  userDismissed    Boolean  @default(false)
+  userBookmarked   Boolean  @default(false)
+
+  // Publication tracking
+  wasPublished   Boolean   @default(false)
+  publishedAt    DateTime?
+  publishedTo    String[] // Platform IDs
+
+  @@index([projectId])
+  @@index([eventType])
+  @@index([eventDate])
+  @@index([newsworthinessScore])
+  @@index([impact])
+  @@index([wasPublished])
+  @@map("newsworthy_events")
+}
+
+enum NewsworthyType {
+  MAJOR_RELEASE // Semantic version bump (1.0 -> 2.0)
+  FEATURE_RELEASE // New feature added
+  BREAKING_CHANGE // Breaking API/behavior change
+  SECURITY_FIX // Security vulnerability fix
+  CRITICAL_BUGFIX // High-priority bug fix
+  PERFORMANCE_IMPROVEMENT // Significant performance gain
+  MILESTONE // Project milestone reached
+  FIRST_RELEASE // First ever release
+  MAJOR_REFACTOR // Large code refactoring
+  DOCUMENTATION // Major documentation update
+  COLLABORATION // Notable collaboration/contribution
+  CUSTOM // User-defined newsworthy event
+}
+
+enum EventImpact {
+  CRITICAL // Must announce immediately
+  HIGH // Should announce soon
+  MEDIUM // Consider announcing
+  LOW // Minor, probably skip
+}
+
+// ============================================
+// CONTENT ANALYTICS & METRICS
+// ============================================
+
+// Content generation and publishing metrics
+model ContentMetrics {
+  id        String   @id @default(cuid())
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Time period for these metrics
+  periodStart DateTime
+  periodEnd   DateTime
+  periodType  MetricPeriodType @default(DAILY)
+
+  // Content generation metrics
+  totalGenerated       Int @default(0)
+  totalGeneratedTokens Int @default(0)
+  totalGeneratedCost   Float @default(0)
+  generationSuccessRate Float? // Percentage of successful generations
+
+  // Publishing metrics
+  totalPublished    Int @default(0)
+  totalFailed       Int @default(0)
+  totalScheduled    Int @default(0)
+  publishSuccessRate Float? // Percentage of successful publishes
+
+  // Content by type
+  blogPosts       Int @default(0)
+  emailCampaigns  Int @default(0)
+  socialPosts     Int @default(0)
+  newslettersSent Int @default(0)
+
+  // Platform breakdown (JSON with platform-specific counts)
+  platformBreakdown Json?
+
+  // AI provider breakdown
+  openaiGenerations     Int @default(0)
+  anthropicGenerations  Int @default(0)
+  openaiTokens          Int @default(0)
+  anthropicTokens       Int @default(0)
+  openaiCost            Float @default(0)
+  anthropicCost         Float @default(0)
+
+  // Content velocity
+  avgContentPerDay   Float?
+  avgContentPerWeek  Float?
+  avgContentPerMonth Float?
+
+  // Quality metrics
+  avgEditDistance    Float? // How much AI content was edited
+  avgTimeToPublish   Int? // Average seconds from generation to publish
+
+  @@unique([projectId, periodStart, periodEnd, periodType])
+  @@index([projectId])
+  @@index([periodStart])
+  @@index([periodEnd])
+  @@index([periodType])
+  @@map("content_metrics")
+}
+
+enum MetricPeriodType {
+  HOURLY
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+// Platform-specific engagement metrics
+model PlatformMetrics {
+  id        String   @id @default(cuid())
+  projectId String
+  platformId String
+  contentId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Time period
+  periodStart DateTime
+  periodEnd   DateTime
+
+  // Platform type
+  platformType PlatformType
+
+  // Engagement metrics (when available from platform APIs)
+  views       Int? @default(0)
+  likes       Int? @default(0)
+  shares      Int? @default(0)
+  comments    Int? @default(0)
+  clicks      Int? @default(0)
+  impressions Int? @default(0)
+
+  // Calculated metrics
+  engagementRate Float? // (likes + shares + comments) / impressions
+  clickThroughRate Float? // clicks / impressions
+
+  // Follower/subscriber metrics
+  followers    Int?
+  subscribers  Int?
+  followerGrowth Int? // Net change in followers
+
+  // Platform-specific metrics (JSON for flexibility)
+  platformSpecificMetrics Json?
+
+  // Content reference (if tracking specific content performance)
+  contentPublicationId String?
+
+  @@index([projectId])
+  @@index([platformId])
+  @@index([contentId])
+  @@index([platformType])
+  @@index([periodStart])
+  @@index([periodEnd])
+  @@map("platform_metrics")
+}
+
+// Cost tracking for AI and platform usage
+model CostTracking {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String?
+  createdAt DateTime @default(now())
+
+  // Cost details
+  service      CostService
+  operation    String // e.g., "text_generation", "image_generation", "api_call"
+  resourceType String? // e.g., "gpt-4", "dall-e-3", "claude-3-opus"
+
+  // Usage metrics
+  tokensUsed      Int? // For AI text generation
+  imagesGenerated Int? // For image generation
+  apiCalls        Int? // For platform API calls
+
+  // Cost calculation
+  unitCost  Float // Cost per unit (token, image, call)
+  totalCost Float // Total cost for this operation
+  currency  String @default("USD")
+
+  // Additional metadata
+  metadata Json? // Store provider-specific details
+
+  // Time period (for aggregation)
+  billingPeriod DateTime @default(now()) // Month/day for cost rollup
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([service])
+  @@index([billingPeriod])
+  @@index([createdAt])
+  @@map("cost_tracking")
+}
+
+enum CostService {
+  OPENAI_TEXT
+  OPENAI_IMAGE
+  ANTHROPIC_TEXT
+  TWITTER_API
+  LINKEDIN_API
+  FACEBOOK_API
+  REDDIT_API
+  MAILCHIMP_API
+  SENDGRID_API
+  RESEND_API
+  MEDIUM_API
+  HASHNODE_API
+  DEVTO_API
+  WORDPRESS_API
+  GHOST_API
+  VERCEL_BLOB
+  CLOUDFLARE_R2
+  OTHER
+}
+
+// Aggregated cost summaries (for dashboard performance)
+model CostSummary {
+  id        String   @id @default(cuid())
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Time period
+  periodStart DateTime
+  periodEnd   DateTime
+  periodType  MetricPeriodType @default(MONTHLY)
+
+  // Total costs
+  totalCost Float @default(0)
+  currency  String @default("USD")
+
+  // Cost by service category
+  aiTextCost       Float @default(0)
+  aiImageCost      Float @default(0)
+  platformApiCost  Float @default(0)
+  storageCost      Float @default(0)
+  emailServiceCost Float @default(0)
+
+  // Cost by provider
+  openaiCost     Float @default(0)
+  anthropicCost  Float @default(0)
+  vercelCost     Float @default(0)
+  resendCost     Float @default(0)
+  sendgridCost   Float @default(0)
+  mailchimpCost  Float @default(0)
+  cloudflareR2Cost Float @default(0)
+
+  // Usage metrics
+  totalTokensUsed      Int @default(0)
+  totalImagesGenerated Int @default(0)
+  totalApiCalls        Int @default(0)
+
+  // Cost per content item
+  avgCostPerContent Float?
+  avgCostPerPublish Float?
+
+  // Budget tracking
+  budgetLimit   Float?
+  budgetUsed    Float @default(0)
+  budgetPercent Float? // budgetUsed / budgetLimit * 100
+
+  @@unique([projectId, periodStart, periodEnd, periodType])
+  @@index([projectId])
+  @@index([periodStart])
+  @@index([periodEnd])
+  @@index([periodType])
+  @@map("cost_summary")
+}
+
+// Content performance tracking (best performing content identification)
+model ContentPerformance {
+  id        String   @id @default(cuid())
+  contentId String
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Content reference
+  contentTitle String?
+  platform     PlatformType
+
+  // Aggregated engagement across all platforms
+  totalViews       Int @default(0)
+  totalLikes       Int @default(0)
+  totalShares      Int @default(0)
+  totalComments    Int @default(0)
+  totalClicks      Int @default(0)
+  totalImpressions Int @default(0)
+
+  // Calculated performance score (weighted combination of metrics)
+  performanceScore Float?
+  engagementRate   Float?
+
+  // Rankings (updated periodically)
+  rankOverall        Int?
+  rankInCategory     Int?
+  rankOnPlatform     Int?
+
+  // Time-based performance
+  firstDayViews     Int?
+  firstWeekViews    Int?
+  peakEngagementDate DateTime?
+
+  @@unique([contentId, platform])
+  @@index([contentId])
+  @@index([projectId])
+  @@index([platform])
+  @@index([performanceScore])
+  @@index([createdAt])
+  @@map("content_performance")
+}
+
+// Analytics events (granular tracking)
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  projectId String
+  createdAt DateTime @default(now())
+
+  // Event details
+  eventType   AnalyticsEventType
+  eventName   String
+  description String? @db.Text
+
+  // Associated resources
+  userId     String?
+  contentId  String?
+  platformId String?
+
+  // Event data
+  metadata Json?
+
+  // Metrics
+  value      Float?
+  duration   Int? // Milliseconds
+  success    Boolean @default(true)
+  errorMsg   String? @db.Text
+
+  @@index([projectId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([userId])
+  @@index([contentId])
+  @@index([platformId])
+  @@map("analytics_events")
+}
+
+enum AnalyticsEventType {
+  CONTENT_GENERATED
+  CONTENT_PUBLISHED
+  CONTENT_SCHEDULED
+  CONTENT_FAILED
+  PLATFORM_CONNECTED
+  PLATFORM_DISCONNECTED
+  IMAGE_GENERATED
+  EMAIL_SENT
+  EMAIL_OPENED
+  EMAIL_CLICKED
+  API_CALL
+  COST_INCURRED
+  USER_ACTION
+  SYSTEM_EVENT
+}
+
+// User activity and session analytics
+model UserAnalytics {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  createdAt DateTime @default(now())
+
+  // Session info
+  sessionId String?
+  ipAddress String?
+  userAgent String? @db.Text
+
+  // Activity metrics
+  action       String
+  resourceType String?
+  resourceId   String?
+
+  // Performance
+  duration Int? // Milliseconds
+  success  Boolean @default(true)
+
+  // Metadata
+  metadata Json?
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@index([action])
+  @@map("user_analytics")
+}

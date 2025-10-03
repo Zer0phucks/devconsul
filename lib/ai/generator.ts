@@ -13,6 +13,8 @@ import * as linkedinPrompts from './prompts/linkedin';
 import * as facebookPrompts from './prompts/facebook';
 import * as redditPrompts from './prompts/reddit';
 import { db } from '@/lib/db';
+import { trackCost } from '@/lib/analytics/cost-tracker';
+import { CostService } from '@prisma/client';
 
 export type Platform = 'blog' | 'email' | 'twitter' | 'linkedin' | 'facebook' | 'reddit';
 
@@ -325,6 +327,27 @@ async function storeGeneratedContent(
           platform,
           generatedAt: new Date().toISOString(),
         },
+      },
+    });
+
+    // Track cost for analytics
+    const service: CostService =
+      provider === 'openai' ? 'OPENAI_TEXT' : 'ANTHROPIC_TEXT';
+
+    await trackCost({
+      projectId,
+      service,
+      operation: 'content_generation',
+      resourceType: platform,
+      tokensUsed: result.tokensUsed.total,
+      unitCost: result.cost / result.tokensUsed.total,
+      totalCost: result.cost,
+      metadata: {
+        model: result.model,
+        platform,
+        promptTokens: result.tokensUsed.prompt,
+        completionTokens: result.tokensUsed.completion,
+        finishReason: result.finishReason,
       },
     });
   } catch (error) {

@@ -64,6 +64,32 @@ type Events = {
       userId: string;
     };
   };
+  "report/generate": {
+    data: {
+      reportConfigId: string;
+      userId: string;
+      triggeredBy: "manual" | "scheduled" | "api";
+    };
+  };
+  "export/data": {
+    data: {
+      projectId: string;
+      exportType: string;
+      outputFormat: string;
+      userId: string;
+      dateFrom?: Date;
+      dateTo?: Date;
+      options?: Record<string, any>;
+    };
+  };
+  "report/email.send": {
+    data: {
+      subscriptionId: string;
+      reportType: string;
+      projectId: string;
+      triggeredBy: "manual" | "cron" | "api";
+    };
+  };
 };
 
 /**
