@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/auth-helpers';
 import { deleteImage } from '@/lib/storage/image-storage';
 
 export async function GET(
@@ -18,7 +18,7 @@ export async function GET(
     const { id } = await params;
 
     // Authenticate user
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -82,7 +82,7 @@ export async function PUT(
     const { id } = await params;
 
     // Authenticate user
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -139,7 +139,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Authenticate user
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

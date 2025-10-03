@@ -7,8 +7,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
-import { authOptions } from '@/lib/auth';
+import { getServerSession } from '@/lib/auth-helpers';
+import { authOptions } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
 import { apiErrorHandler, createNotFoundError } from '@/lib/monitoring/error-handler';
 import { AuthorizationError, ValidationError } from '@/lib/monitoring/sentry';
@@ -24,7 +24,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user) {
       throw new AuthorizationError('Authentication required');
     }
@@ -58,7 +58,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user) {
       throw new AuthorizationError('Authentication required');
     }
@@ -139,7 +139,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user) {
       throw new AuthorizationError('Authentication required');
     }

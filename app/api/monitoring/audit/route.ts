@@ -6,8 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
-import { authOptions } from '@/lib/auth';
+import { getServerSession } from '@/lib/auth-helpers';
+import { authOptions } from '@/lib/auth-helpers';
 import { apiErrorHandler } from '@/lib/monitoring/error-handler';
 import { AuthorizationError } from '@/lib/monitoring/sentry';
 import { queryAuditLogs, exportAuditLogsToCSV } from '@/lib/monitoring/audit';
@@ -19,7 +19,7 @@ import { AuditResource } from '@prisma/client';
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user) {
       throw new AuthorizationError('Authentication required');
     }
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user) {
       throw new AuthorizationError('Authentication required');
     }

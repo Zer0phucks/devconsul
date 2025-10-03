@@ -5,8 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
-import { authOptions } from '@/lib/auth';
+import { getServerSession } from '@/lib/auth-helpers';
+import { authOptions } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
 import { createGitHubClient } from '@/lib/github/client';
 import { generateRepositoryInsights } from '@/lib/github/insights';
@@ -24,7 +24,7 @@ export async function GET(
   { params }: { params: { projectId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -104,7 +104,7 @@ export async function POST(
   { params }: { params: { projectId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

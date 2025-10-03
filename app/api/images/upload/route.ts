@@ -7,12 +7,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { uploadImage } from '@/lib/storage/image-storage';
 import { getImageInfo } from '@/lib/image-processing/processor';
 import { prisma } from '@/lib/db';
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/auth-helpers';
 
 export async function POST(req: NextRequest) {
   try {
     // Authenticate user
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
