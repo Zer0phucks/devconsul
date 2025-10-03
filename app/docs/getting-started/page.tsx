@@ -32,14 +32,24 @@ async function getDocContent() {
   return { content, frontmatter }
 }
 
-export default async function GettingStartedPage() {
-  const { content } = await getDocContent()
-
-  return (
-    <div className="container mx-auto px-4 py-12 max-w-4xl">
-      <article className="prose prose-gray dark:prose-invert max-w-none">
-        {content}
-      </article>
-    </div>
-  )
+export default async function Page() {
+  try {
+    const { content } = await getDocContent()
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
+        <article className="prose prose-gray dark:prose-invert max-w-none">
+          {content}
+        </article>
+      </div>
+    )
+  } catch (error) {
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
+        <article className="prose prose-gray dark:prose-invert max-w-none">
+          <h1>Documentation</h1>
+          <p>Documentation is being updated. Please check back soon.</p>
+        </article>
+      </div>
+    )
+  }
 }

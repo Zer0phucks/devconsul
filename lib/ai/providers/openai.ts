@@ -1,9 +1,10 @@
 /**
- * OpenAI Provider Wrapper
- * Handles OpenAI API integration with error handling and token tracking
+ * OpenAI Provider Wrapper (via Vercel AI SDK)
+ * Handles OpenAI API integration through Vercel AI Gateway with error handling and token tracking
  */
 
-import OpenAI from 'openai';
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
 
 export interface OpenAIConfig {
   apiKey: string;
@@ -39,22 +40,18 @@ const TOKEN_COSTS: Record<string, { prompt: number; completion: number }> = {
 };
 
 export class OpenAIProvider {
-  private client: OpenAI;
   private model: string;
   private maxTokens: number;
   private temperature: number;
 
   constructor(config: OpenAIConfig) {
-    this.client = new OpenAI({
-      apiKey: config.apiKey,
-    });
     this.model = config.model || 'gpt-3.5-turbo';
     this.maxTokens = config.maxTokens || 2000;
     this.temperature = config.temperature || 0.7;
   }
 
   /**
-   * Generate content using OpenAI
+   * Generate content using OpenAI via Vercel AI SDK
    */
   async generate(
     systemPrompt: string,
@@ -66,18 +63,15 @@ export class OpenAIProvider {
       const maxTokens = options?.maxTokens || this.maxTokens;
       const temperature = options?.temperature || this.temperature;
 
-      const response = await this.client.chat.completions.create({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        max_tokens: maxTokens,
+      const result = await generateText({
+        model: openai(model),
+        system: systemPrompt,
+        prompt: userPrompt,
+        maxTokens,
         temperature,
       });
 
-      const choice = response.choices[0];
-      if (!choice?.message?.content) {
+      if (!result.text) {
         return {
           error: 'No content generated',
           retryable: true,
@@ -85,19 +79,19 @@ export class OpenAIProvider {
       }
 
       const tokensUsed = {
-        prompt: response.usage?.prompt_tokens || 0,
-        completion: response.usage?.completion_tokens || 0,
-        total: response.usage?.total_tokens || 0,
+        prompt: result.usage?.promptTokens || 0,
+        completion: result.usage?.completionTokens || 0,
+        total: result.usage?.totalTokens || 0,
       };
 
       const cost = this.calculateCost(model, tokensUsed);
 
       return {
-        content: choice.message.content,
+        content: result.text,
         model,
         tokensUsed,
         cost,
-        finishReason: choice.finish_reason || 'stop',
+        finishReason: result.finishReason || 'stop',
       };
     } catch (error: any) {
       return this.handleError(error);
@@ -189,14 +183,9 @@ export class OpenAIProvider {
  * Create OpenAI provider instance
  */
 export function createOpenAIProvider(config?: Partial<OpenAIConfig>): OpenAIProvider {
-  const apiKey = config?.apiKey || process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error('OpenAI API key not configured');
-  }
-
+  // Vercel AI SDK handles API key via VERCEL_AI_API_KEY env var
   return new OpenAIProvider({
-    apiKey,
+    apiKey: '', // Not used with Vercel AI SDK
     ...config,
   });
 }
