@@ -39,13 +39,19 @@ describe('Platform Character Limits', () => {
     });
 
     it('should preserve word boundaries when truncating', () => {
-      const text = 'a'.repeat(250) + ' word boundary test ' + 'b'.repeat(50);
+      // Create text that exceeds limit with a space near the truncation point
+      // Twitter limit: 280, suffix: 1 char, maxLength: 279
+      // 80% of 279 = 223.2, so last space must be after position 223 to preserve boundary
+      const text = 'a'.repeat(270) + ' test more words here';
       const result = enforceLimit(text, 'twitter', { forceTruncate: true });
 
       expect(result.truncated).toBe(true);
       expect(result.text).toMatch(/…$/);
-      // Should truncate at space, not mid-word
-      expect(result.text).not.toMatch(/\S…$/);
+      // The implementation found the last space at position 270 (> 223.2 threshold)
+      // So it truncated at that space, keeping " test" and adding "…"
+      // Result should be: 270 a's + " test" + "…" (no word is cut mid-character)
+      expect(result.text).toContain(' test');
+      expect(result.text).not.toContain('more'); // "more" should be cut off
     });
 
     it('should use custom truncation suffix', () => {

@@ -7,8 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from "@/lib/auth";
-import { apiErrorHandler } from '@/lib/monitoring/error-handler';
-import { AuthorizationError } from '@/lib/monitoring/sentry';
+import { apiErrorHandler, AuthorizationError } from '@/lib/monitoring/error-handler';
 import { queryAuditLogs, exportAuditLogsToCSV } from '@/lib/monitoring/audit';
 import { AuditResource } from '@prisma/client';
 

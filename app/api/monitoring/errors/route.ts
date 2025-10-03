@@ -8,8 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
-import { apiErrorHandler } from '@/lib/monitoring/error-handler';
-import { AuthorizationError, ValidationError } from '@/lib/monitoring/sentry';
+import { apiErrorHandler, AuthorizationError, ValidationError } from '@/lib/monitoring/error-handler';
 import { ErrorLevel, ErrorStatus } from '@prisma/client';
 
 /**

@@ -8,8 +8,6 @@
  */
 
 import React, { Component, ReactNode } from 'react';
-import { captureError } from '@/lib/monitoring/sentry';
-import { ErrorLevel } from '@prisma/client';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -45,14 +43,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log error to Sentry and database
-    captureError(error, {
-      level: ErrorLevel.ERROR,
-      context: {
-        componentStack: errorInfo.componentStack,
-        errorBoundary: true,
-      },
-    });
+    // Log error to console (Sentry removed)
+    console.error('Error caught by boundary:', error);
+    console.error('Component stack:', errorInfo.componentStack);
 
     // Update state with error info
     this.setState({

@@ -9,8 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
-import { apiErrorHandler, createNotFoundError } from '@/lib/monitoring/error-handler';
-import { AuthorizationError, ValidationError } from '@/lib/monitoring/sentry';
+import { apiErrorHandler, createNotFoundError, AuthorizationError, ValidationError } from '@/lib/monitoring/error-handler';
 import { createAuditLog } from '@/lib/monitoring/audit';
 import { ErrorStatus } from '@prisma/client';
 

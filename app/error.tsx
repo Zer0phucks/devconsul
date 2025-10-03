@@ -7,8 +7,6 @@
  */
 
 import { useEffect } from 'react';
-import { captureError } from '@/lib/monitoring/sentry';
-import { ErrorLevel } from '@prisma/client';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -21,18 +19,8 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log error to Sentry and database
-    captureError(error, {
-      level: ErrorLevel.ERROR,
-      context: {
-        digest: error.digest,
-        errorPage: true,
-      },
-      tags: {
-        errorType: 'route_error',
-        ...(error.digest && { digest: error.digest }),
-      },
-    });
+    // Log error to console (Sentry removed)
+    console.error('Route error occurred:', error);
   }, [error]);
 
   return (

@@ -8,8 +8,6 @@
  */
 
 import { useEffect } from 'react';
-import { captureError } from '@/lib/monitoring/sentry';
-import { ErrorLevel } from '@prisma/client';
 
 export default function GlobalError({
   error,
@@ -19,18 +17,8 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log error to Sentry and database
-    captureError(error, {
-      level: ErrorLevel.CRITICAL,
-      context: {
-        digest: error.digest,
-        globalError: true,
-      },
-      tags: {
-        errorType: 'global_error',
-        ...(error.digest && { digest: error.digest }),
-      },
-    });
+    // Log error to console (Sentry removed)
+    console.error('Global error occurred:', error);
   }, [error]);
 
   return (

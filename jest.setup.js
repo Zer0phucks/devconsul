@@ -1,5 +1,45 @@
 import '@testing-library/jest-dom'
 import '@anthropic-ai/sdk/shims/node'
+import { TextEncoder, TextDecoder } from 'util'
+import { ReadableStream } from 'stream/web'
+
+// Polyfill Web APIs for Next.js before any imports
+global.TextEncoder = TextEncoder
+global.TextDecoder = TextDecoder
+global.ReadableStream = ReadableStream
+
+// Mock Request and Response
+class MockRequest {
+  constructor(url, options = {}) {
+    this.url = url
+    this.options = options
+  }
+  get method() { return this.options.method || 'GET' }
+  get headers() { return new Map(Object.entries(this.options.headers || {})) }
+  async json() { return this.options.body ? JSON.parse(this.options.body) : {} }
+  async text() { return this.options.body || '' }
+}
+
+class MockResponse {
+  constructor(body, init = {}) {
+    this.body = body
+    this.init = init
+  }
+  get status() { return this.init.status || 200 }
+  get headers() { return new Map(Object.entries(this.init.headers || {})) }
+  async json() { return typeof this.body === 'string' ? JSON.parse(this.body) : this.body }
+  async text() { return typeof this.body === 'string' ? this.body : JSON.stringify(this.body) }
+  static json(data, init) {
+    return new MockResponse(JSON.stringify(data), {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) }
+    })
+  }
+}
+
+global.Request = MockRequest
+global.Response = MockResponse
+global.Headers = Map
 
 // Mock environment variables for tests
 process.env.NEXTAUTH_URL = 'http://localhost:3000'

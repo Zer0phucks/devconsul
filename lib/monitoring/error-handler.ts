@@ -11,16 +11,50 @@
 
 import { NextResponse } from 'next/server';
 import { ErrorLevel } from '@prisma/client';
-import {
-  captureError,
-  APIError,
-  ValidationError,
-  ExternalAPIError,
-  DatabaseError,
-  AuthenticationError,
-  AuthorizationError,
-} from './sentry';
 import { createAuditLog } from './audit';
+
+// Error classes (previously from sentry.ts)
+export class APIError extends Error {
+  constructor(message: string, public statusCode: number = 500) {
+    super(message);
+    this.name = 'APIError';
+  }
+}
+
+export class ValidationError extends Error {
+  constructor(message: string, public details?: any) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+export class ExternalAPIError extends Error {
+  constructor(message: string, public service: string, public statusCode?: number) {
+    super(message);
+    this.name = 'ExternalAPIError';
+  }
+}
+
+export class DatabaseError extends Error {
+  constructor(message: string, public operation?: string) {
+    super(message);
+    this.name = 'DatabaseError';
+  }
+}
+
+export class AuthenticationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthenticationError';
+  }
+}
+
+export class AuthorizationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthorizationError';
+  }
+}
 
 /**
  * Error response interface for API routes
@@ -183,23 +217,17 @@ export async function handleError(
     // Get user-friendly message
     const { message, suggestions } = getUserFriendlyMessage(code, error);
 
-    // Capture to Sentry and database
-    await captureError(error, {
+    // Log error (Sentry removed, just console logging for now)
+    console.error('Error occurred:', {
+      error: error.message,
       level,
+      code,
       userId: context?.userId,
       projectId: context?.projectId,
       context: context?.additionalContext,
-      tags: {
-        errorCode: code,
-        ...(context?.requestId && { requestId: context.requestId }),
-      },
-      request: {
-        url: context?.url,
-        method: context?.method,
-        ipAddress: context?.ipAddress,
-        userAgent: context?.userAgent,
-        requestId: context?.requestId,
-      },
+      requestId: context?.requestId,
+      url: context?.url,
+      method: context?.method,
     });
 
     // Create audit log for error occurrence (for critical/fatal errors)
@@ -440,7 +468,9 @@ export async function logError(
   }
 ): Promise<void> {
   try {
-    await captureError(error, {
+    // Log error (Sentry removed, just console logging for now)
+    console.error('Error logged:', {
+      error: error.message,
       level,
       userId: context?.userId,
       projectId: context?.projectId,
