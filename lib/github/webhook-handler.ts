@@ -1,5 +1,5 @@
 import { Webhooks } from '@octokit/webhooks';
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/supabase/kv';
 import type { GitHubActivity } from '@/lib/types';
 
 // Lazy-initialize webhook handler to avoid build-time errors

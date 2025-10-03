@@ -1,7 +1,7 @@
 import { openai } from '@ai-sdk/openai';
 import { generateText, streamText } from 'ai';
 import type { GitHubActivity, GeneratedContent, AIGenerationConfig } from '@/lib/types';
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/supabase/kv';
 
 // Default configuration for AI generation
 const DEFAULT_CONFIG: AIGenerationConfig = {

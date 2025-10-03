@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
-import { sql } from '@vercel/postgres';
-import { kv } from '@vercel/kv';
+import { prisma } from '@/lib/db';
+import { kv } from '@/lib/supabase/kv';
 import { generateNewsletter } from '@/lib/ai/content-generator';
 import { getRecentActivities } from '@/lib/github/webhook-handler';
 import type { Newsletter, Subscriber, GitHubActivity } from '@/lib/types';
@@ -112,13 +112,43 @@ function parseNewsletterContent(content: string): {
 // Get active subscribers
 async function getActiveSubscribers(): Promise<Subscriber[]> {
   try {
-    const { rows } = await sql<Subscriber>`
-      SELECT * FROM subscribers
-      WHERE status = 'active'
-      AND (preferences->>'frequency' = 'weekly' OR preferences->>'frequency' IS NULL)
-    `;
+    const unsubscribes = await prisma.emailUnsubscribe.findMany({
+      select: { email: true },
+    });
 
-    return rows;
+    const unsubscribedEmails = unsubscribes.map((u) => u.email);
+
+    // Get recipients who haven't unsubscribed
+    // Note: EmailRecipient doesn't have frequency, so we get all active ones
+    const recipients = await prisma.emailRecipient.findMany({
+      where: {
+        email: {
+          notIn: unsubscribedEmails,
+        },
+        status: 'DELIVERED', // Assuming active means previously delivered
+      },
+      distinct: ['email'],
+      select: {
+        email: true,
+        metadata: true,
+      },
+    });
+
+    // Transform to Subscriber format
+    return recipients.map((r) => {
+      const metadata = (r.metadata as any) || {};
+      return {
+        id: r.email, // Using email as ID
+        email: r.email,
+        name: metadata.name,
+        subscribedAt: metadata.subscribedAt ? new Date(metadata.subscribedAt) : new Date(),
+        status: 'active' as const,
+        preferences: {
+          frequency: 'weekly' as const,
+          topics: metadata.topics || [],
+        },
+      };
+    });
   } catch (error) {
     console.error('Failed to get subscribers:', error);
     return [];
@@ -129,28 +159,31 @@ async function getActiveSubscribers(): Promise<Subscriber[]> {
 async function createNewsletterRecord(
   data: Omit<Newsletter, 'id' | 'sentAt' | 'recipientCount' | 'openRate' | 'clickRate'>
 ): Promise<Newsletter> {
-  const id = `newsletter_${Date.now()}`;
+  // Note: EmailCampaign requires projectId. This should be passed as parameter in production.
+  const campaign = await prisma.emailCampaign.create({
+    data: {
+      projectId: '', // TODO: Pass projectId as parameter
+      name: data.subject,
+      emailProvider: 'RESEND',
+      subject: data.subject,
+      content: data.content,
+      scheduledAt: new Date(),
+      status: 'SCHEDULED',
+      settings: {
+        activities: data.activities,
+      },
+    },
+  });
 
   const newsletter: Newsletter = {
-    id,
-    ...data,
-    scheduledFor: new Date(),
+    id: campaign.id,
+    subject: campaign.subject,
+    content: campaign.content || '',
+    htmlContent: '',
+    status: campaign.status.toLowerCase() as Newsletter['status'],
+    scheduledFor: campaign.scheduledAt || new Date(),
+    activities: (campaign.settings as any)?.activities || data.activities,
   };
-
-  await sql`
-    INSERT INTO newsletters (
-      id, subject, content, html_content, status, scheduled_for, activities
-    )
-    VALUES (
-      ${newsletter.id},
-      ${newsletter.subject},
-      ${newsletter.content},
-      ${newsletter.htmlContent},
-      ${newsletter.status},
-      ${newsletter.scheduledFor},
-      ${JSON.stringify(newsletter.activities)}
-    )
-  `;
 
   return newsletter;
 }
@@ -202,14 +235,16 @@ async function updateNewsletterStatus(
   status: Newsletter['status'],
   recipientCount?: number
 ): Promise<void> {
-  await sql`
-    UPDATE newsletters
-    SET
-      status = ${status},
-      sent_at = ${status === 'sent' ? new Date() : null},
-      recipient_count = ${recipientCount || 0}
-    WHERE id = ${id}
-  `;
+  await prisma.emailCampaign.update({
+    where: { id },
+    data: {
+      status: status.toUpperCase() as 'DRAFT' | 'SCHEDULED' | 'SENT' | 'FAILED',
+      sentAt: status === 'sent' ? new Date() : undefined,
+      settings: {
+        recipientCount: recipientCount || 0,
+      },
+    },
+  });
 }
 
 // Generate unsubscribe token
@@ -220,13 +255,18 @@ function generateUnsubscribeToken(subscriberId: string): string {
 
 // Subscribe to newsletter
 export async function subscribeToNewsletter(email: string, name?: string): Promise<Subscriber> {
-  const id = `sub_${Date.now()}`;
+  const subscribedAt = new Date();
+
+  // Remove from unsubscribe list if exists
+  await prisma.emailUnsubscribe.deleteMany({
+    where: { email },
+  });
 
   const subscriber: Subscriber = {
-    id,
+    id: email, // Using email as ID
     email,
     name,
-    subscribedAt: new Date(),
+    subscribedAt,
     status: 'active',
     preferences: {
       frequency: 'weekly',
@@ -234,21 +274,13 @@ export async function subscribeToNewsletter(email: string, name?: string): Promi
     },
   };
 
-  await sql`
-    INSERT INTO subscribers (
-      id, email, name, subscribed_at, status, preferences
-    )
-    VALUES (
-      ${subscriber.id},
-      ${subscriber.email},
-      ${subscriber.name},
-      ${subscriber.subscribedAt},
-      ${subscriber.status},
-      ${JSON.stringify(subscriber.preferences)}
-    )
-    ON CONFLICT (email) DO UPDATE
-    SET status = 'active', subscribed_at = ${subscriber.subscribedAt}
-  `;
+  // Note: We don't create EmailRecipient here - it's created when emails are sent
+  // Instead, store subscription preferences in KV for now
+  await kv.set(`subscriber:${email}`, {
+    name,
+    subscribedAt: subscribedAt.toISOString(),
+    preferences: subscriber.preferences,
+  });
 
   // Send welcome email
   await sendWelcomeEmail(subscriber);
@@ -288,13 +320,20 @@ export async function unsubscribeFromNewsletter(token: string): Promise<void> {
     const decoded = Buffer.from(token, 'base64').toString();
     const [subscriberId] = decoded.split(':');
 
-    await sql`
-      UPDATE subscribers
-      SET
-        status = 'unsubscribed',
-        unsubscribed_at = ${new Date()}
-      WHERE id = ${subscriberId}
-    `;
+    // Get subscriber email from KV or use subscriberId as email
+    const subscriber = await kv.get<{ email?: string }>(`subscriber:${subscriberId}`);
+    const email = subscriber?.email || subscriberId;
+
+    // Add to unsubscribe list
+    await prisma.emailUnsubscribe.create({
+      data: {
+        email,
+        reason: 'User requested unsubscribe',
+      },
+    });
+
+    // Remove from KV
+    await kv.del(`subscriber:${subscriberId}`);
   } catch (error) {
     console.error('Failed to unsubscribe:', error);
     throw error;

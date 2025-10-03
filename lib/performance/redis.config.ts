@@ -5,7 +5,7 @@
  * using Vercel's KV store (ioredis-compatible)
  */
 
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/supabase/kv';
 
 // Redis TTL configurations (in seconds)
 export const CACHE_TTL = {

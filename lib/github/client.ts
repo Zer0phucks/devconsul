@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/supabase/kv';
 
 // Cache TTL for repository lists (15 minutes)
 const REPO_CACHE_TTL = 15 * 60;

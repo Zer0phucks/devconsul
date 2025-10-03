@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/supabase/kv';
 
 export async function GET(request: NextRequest) {
   try {
