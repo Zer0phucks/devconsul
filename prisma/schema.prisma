@@ -716,3 +716,178 @@ enum EmailTemplateType {
   PLAIN
   CUSTOM
 }
+
+// ============================================
+// CONTENT TEMPLATES & CUSTOMIZATION
+// ============================================
+
+// Universal content templates for all platforms
+model Template {
+  id        String   @id @default(cuid())
+  projectId String? // null = global/default template
+  userId    String? // Template creator
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Template details
+  name        String
+  description String? @db.Text
+  platform    TemplatePlatform
+  category    String? // e.g., "technical", "announcement", "tutorial"
+
+  // Template content with variable placeholders
+  content     String  @db.Text // Template body with {{variables}}
+  subject     String? // For email/newsletter templates
+
+  // Template metadata
+  variables   String[] // List of available variables: ["repository", "activity", "date"]
+  tags        String[]
+  isDefault   Boolean  @default(false) // System default template
+  isPublic    Boolean  @default(false) // Shareable template
+
+  // Version control
+  version     Int      @default(1)
+  parentId    String? // For template versions
+  parent      Template?  @relation("TemplateVersions", fields: [parentId], references: [id])
+  versions    Template[] @relation("TemplateVersions")
+
+  // Usage analytics
+  usageCount     Int      @default(0)
+  lastUsedAt     DateTime?
+  effectivenessScore Float? // A/B testing score
+
+  // Relationships
+  promptLibrary PromptLibrary[]
+  contentHistory ContentTemplateHistory[]
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([platform])
+  @@index([category])
+  @@index([isDefault])
+  @@index([isPublic])
+  @@index([usageCount])
+  @@map("templates")
+}
+
+enum TemplatePlatform {
+  BLOG
+  EMAIL
+  NEWSLETTER
+  TWITTER
+  LINKEDIN
+  FACEBOOK
+  REDDIT
+  HASHNODE
+  DEVTO
+  MEDIUM
+  WORDPRESS
+  GHOST
+  ALL // Universal template
+}
+
+// AI Prompt library for content generation
+model PromptLibrary {
+  id        String   @id @default(cuid())
+  projectId String? // null = global/shared prompt
+  userId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Prompt details
+  name        String
+  description String? @db.Text
+  category    PromptCategory
+
+  // Prompt content
+  systemPrompt String  @db.Text // System instructions for AI
+  userPrompt   String  @db.Text // User prompt template with {{variables}}
+
+  // Associated template (optional)
+  templateId  String?
+  template    Template? @relation(fields: [templateId], references: [id])
+
+  // Prompt configuration
+  variables     String[] // Variables used in prompts
+  platform      TemplatePlatform
+  contentType   String? // "technical", "marketing", "educational"
+  tone          String? // "professional", "casual", "friendly"
+  targetLength  Int? // Target word/character count
+
+  // Metadata
+  tags          String[]
+  isDefault     Boolean @default(false)
+  isPublic      Boolean @default(false)
+
+  // Version control
+  version       Int     @default(1)
+  parentId      String?
+  parent        PromptLibrary?  @relation("PromptVersions", fields: [parentId], references: [id])
+  versions      PromptLibrary[] @relation("PromptVersions")
+
+  // Effectiveness tracking
+  usageCount           Int      @default(0)
+  lastUsedAt           DateTime?
+  averageRating        Float?
+  successRate          Float? // % of successful generations
+  averageTokenUsage    Int?
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([category])
+  @@index([platform])
+  @@index([isDefault])
+  @@index([isPublic])
+  @@index([templateId])
+  @@map("prompt_library")
+}
+
+enum PromptCategory {
+  TECHNICAL_UPDATE
+  FEATURE_ANNOUNCEMENT
+  BUG_FIX
+  RELEASE_NOTES
+  TUTORIAL
+  CASE_STUDY
+  WEEKLY_DIGEST
+  MONTHLY_SUMMARY
+  PRODUCT_UPDATE
+  COMMUNITY_UPDATE
+  CUSTOM
+}
+
+// Track content generation history with templates
+model ContentTemplateHistory {
+  id        String   @id @default(cuid())
+  contentId String
+  createdAt DateTime @default(now())
+
+  // Template used
+  templateId String?
+  template   Template? @relation(fields: [templateId], references: [id])
+
+  // Prompt used
+  promptId   String?
+
+  // Generation metadata
+  variables  Json // Variables substituted: {repository: "...", activity: "..."}
+  platform   TemplatePlatform
+
+  // Performance tracking
+  generatedContent String  @db.Text
+  wasEdited        Boolean @default(false)
+  editDistance     Int? // How much was changed from template
+  timeToEdit       Int? // Seconds spent editing
+
+  // Effectiveness metrics
+  wasPublished     Boolean   @default(false)
+  publishedAt      DateTime?
+  engagementScore  Float? // Clicks, opens, shares, etc.
+  userRating       Int? // 1-5 stars
+
+  @@index([templateId])
+  @@index([contentId])
+  @@index([platform])
+  @@index([createdAt])
+  @@map("content_template_history")
+}
