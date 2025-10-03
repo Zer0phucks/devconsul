@@ -1,0 +1,82 @@
+---
+title: "Ghost CMS Integration Guide"
+description: "Publish to Ghost blogs automatically"
+platform: "ghost"
+---
+
+# Ghost Integration
+
+Automatically publish blog posts to your Ghost publication.
+
+## Prerequisites
+
+- Ghost blog (self-hosted or Ghost.io)
+- Admin API access
+- Ghost Admin API key
+
+## Setup
+
+### Get Your API Key
+
+1. Log into your Ghost Admin panel
+2. Go to **Settings > Integrations**
+3. Click **"Add custom integration"**
+4. Name: "Full Self Publishing"
+5. Copy:
+   - **Admin API Key**
+   - **API URL** (e.g., `https://yourblog.ghost.io`)
+
+### Connect to Full Self Publishing
+
+1. **Settings > Platforms > Ghost**
+2. Enter credentials:
+   - **Ghost URL:** Your blog URL
+   - **Admin API Key:** Paste the key
+3. Click **"Connect"**
+4. Verify connection status
+
+## Configuration
+
+### Post Settings
+
+- **Status:** Draft, Published, Scheduled
+- **Authors:** Primary author (from Ghost users)
+- **Tags:** Auto-generated or custom
+- **Featured:** Mark as featured post
+- **Custom Excerpt:** AI-generated or manual
+
+### Formatting
+
+Ghost uses Mobiledoc format:
+- Markdown automatically converted
+- Code blocks preserved
+- Images uploaded to Ghost storage
+- Proper heading hierarchy
+
+## Publishing
+
+**Post Structure:**
+```
+Title: AI-generated from GitHub activity
+Feature Image: Optional AI-generated
+Content: Markdown formatted
+Tags: Relevant to content
+Published Date: Scheduled or immediate
+```
+
+**Meta Settings:**
+- SEO title
+- Meta description
+- Canonical URL
+- Custom Open Graph images
+
+## Best Practices
+
+- Use Tags for organization
+- Enable featured posts for important updates
+- Schedule posts for consistent timing
+- Review SEO meta before publishing
+
+---
+
+[WordPress Integration](/docs/integrations/wordpress) | [Medium Integration](/docs/integrations/medium)

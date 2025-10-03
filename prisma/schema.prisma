@@ -3064,3 +3064,83 @@ model MockPublication {
   @@index([createdAt])
   @@map("mock_publications")
 }
+
+// ============================================
+// MONITORING AND PERFORMANCE TRACKING
+// ============================================
+
+// Job performance metrics
+model JobMetrics {
+  id               String   @id @default(cuid())
+  jobId            String   @unique
+  totalExecutions  Int      @default(0)
+  successCount     Int      @default(0)
+  failureCount     Int      @default(0)
+  totalDurationMs  BigInt   @default(0)
+  minDurationMs    Int      @default(0)
+  maxDurationMs    Int      @default(0)
+  lastExecutionAt  DateTime?
+  lastSuccessAt    DateTime?
+  lastFailureAt    DateTime?
+  metadata         Json     @default("{}")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([jobId])
+  @@index([lastExecutionAt])
+  @@map("job_metrics")
+}
+
+// Performance baselines for regression detection
+model PerformanceBaseline {
+  id             String   @id @default(cuid())
+  jobId          String   @unique
+  baselineAvgMs  Float
+  baselineP95Ms  Float
+  sampleSize     Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([jobId])
+  @@map("performance_baselines")
+}
+
+// Dead letter queue for failed jobs
+model DeadLetterQueue {
+  id             String   @id @default(cuid())
+  jobId          String
+  eventData      Json
+  error          String
+  metadata       Json     @default("{}")
+  status         String   @default("PENDING") // PENDING, PROCESSING, SUCCEEDED, FAILED
+  attempts       Int      @default(0)
+  lastAttemptAt  DateTime?
+  processedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([jobId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("dead_letter_queue")
+}
+
+// Alert tracking
+model Alert {
+  id         String   @id @default(cuid())
+  type       String
+  severity   String
+  title      String
+  message    String   @db.Text
+  metadata   Json     @default("{}")
+  resolved   Boolean  @default(false)
+  resolvedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([type])
+  @@index([severity])
+  @@index([resolved])
+  @@index([createdAt])
+  @@map("alerts")
+}

@@ -1,0 +1,453 @@
+---
+title: "API Reference"
+description: "Complete REST API documentation for Full Self Publishing"
+---
+
+# API Reference
+
+Full Self Publishing provides a REST API for programmatic access to all platform features.
+
+## Base URL
+
+```
+https://api.fullselfpublishing.com/v1
+```
+
+## Authentication {#authentication}
+
+All API requests require authentication using Bearer tokens.
+
+### Get Your API Key
+
+1. Go to **Settings > Developer > API Keys**
+2. Click **"Generate New Key"**
+3. Name your key (e.g., "Production Server")
+4. Copy the key immediately (shown only once)
+5. Store securely
+
+### Making Authenticated Requests
+
+Include your API key in the Authorization header:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  https://api.fullselfpublishing.com/v1/projects
+```
+
+### API Key Security
+
+- Never commit keys to version control
+- Use environment variables: `FSP_API_KEY`
+- Rotate keys regularly
+- Use separate keys for dev/staging/production
+- Revoke compromised keys immediately
+
+## Rate Limits {#rate-limits}
+
+**Free Tier:**
+- 100 requests per day
+- 10 requests per minute
+
+**Pro Tier:**
+- 1000 requests per day
+- 60 requests per minute
+
+**Enterprise:**
+- Custom limits
+
+### Rate Limit Headers
+
+```http
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 58
+X-RateLimit-Reset: 1625097600
+```
+
+### Handling Rate Limits
+
+When you exceed limits, you'll receive:
+
+```json
+{
+  "error": "rate_limit_exceeded",
+  "message": "Too many requests",
+  "retry_after": 60
+}
+```
+
+## Endpoints
+
+### Projects
+
+**List Projects**
+```http
+GET /v1/projects
+```
+
+Response:
+```json
+{
+  "data": [
+    {
+      "id": "proj_abc123",
+      "name": "My Awesome Library",
+      "repository": "username/repo",
+      "created_at": "2024-01-15T10:00:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "per_page": 20,
+    "total": 45
+  }
+}
+```
+
+**Get Project**
+```http
+GET /v1/projects/{id}
+```
+
+**Create Project**
+```http
+POST /v1/projects
+Content-Type: application/json
+
+{
+  "name": "Project Name",
+  "repository": "owner/repo",
+  "description": "Optional description"
+}
+```
+
+**Update Project**
+```http
+PATCH /v1/projects/{id}
+Content-Type: application/json
+
+{
+  "name": "Updated Name"
+}
+```
+
+**Delete Project**
+```http
+DELETE /v1/projects/{id}
+```
+
+### Content
+
+**List Content**
+```http
+GET /v1/projects/{project_id}/content
+```
+
+Query parameters:
+- `status` - Filter by status (draft, published, failed)
+- `platform` - Filter by platform (wordpress, twitter, etc.)
+- `date_from` - ISO 8601 date
+- `date_to` - ISO 8601 date
+
+**Get Content Item**
+```http
+GET /v1/content/{id}
+```
+
+**Generate Content**
+```http
+POST /v1/projects/{project_id}/generate
+Content-Type: application/json
+
+{
+  "platforms": ["wordpress", "twitter"],
+  "custom_instructions": "Focus on new features"
+}
+```
+
+Response:
+```json
+{
+  "job_id": "job_xyz789",
+  "status": "processing",
+  "estimated_completion": "2024-01-15T10:05:00Z"
+}
+```
+
+**Publish Content**
+```http
+POST /v1/content/{id}/publish
+```
+
+**Update Content**
+```http
+PATCH /v1/content/{id}
+Content-Type: application/json
+
+{
+  "content": "Updated content text",
+  "title": "New title"
+}
+```
+
+### Platforms
+
+**List Connected Platforms**
+```http
+GET /v1/platforms
+```
+
+**Get Platform Connection**
+```http
+GET /v1/platforms/{platform}
+```
+
+**Test Connection**
+```http
+POST /v1/platforms/{platform}/test
+```
+
+### Analytics
+
+**Get Project Analytics**
+```http
+GET /v1/projects/{project_id}/analytics
+
+?date_from=2024-01-01&date_to=2024-01-31
+```
+
+Response:
+```json
+{
+  "period": {
+    "from": "2024-01-01T00:00:00Z",
+    "to": "2024-01-31T23:59:59Z"
+  },
+  "metrics": {
+    "content_generated": 45,
+    "content_published": 42,
+    "platforms": {
+      "wordpress": 15,
+      "twitter": 20,
+      "linkedin": 7
+    },
+    "engagement": {
+      "total_views": 1250,
+      "total_clicks": 340
+    }
+  }
+}
+```
+
+### Webhooks {#webhooks}
+
+**Create Webhook**
+```http
+POST /v1/webhooks
+Content-Type: application/json
+
+{
+  "url": "https://yourdomain.com/webhook",
+  "events": ["content.generated", "content.published"],
+  "secret": "your_webhook_secret"
+}
+```
+
+**List Webhooks**
+```http
+GET /v1/webhooks
+```
+
+**Delete Webhook**
+```http
+DELETE /v1/webhooks/{id}
+```
+
+### Webhook Events
+
+**Available Events:**
+- `content.generated` - New content created
+- `content.published` - Content published to platform
+- `content.failed` - Publishing failed
+- `project.created` - New project created
+- `platform.connected` - Platform connected
+- `platform.disconnected` - Platform disconnected
+
+**Webhook Payload:**
+```json
+{
+  "event": "content.published",
+  "timestamp": "2024-01-15T10:00:00Z",
+  "data": {
+    "content_id": "cont_abc123",
+    "project_id": "proj_xyz789",
+    "platform": "wordpress",
+    "status": "published",
+    "url": "https://yourblog.com/post-url"
+  }
+}
+```
+
+**Webhook Security:**
+
+Verify webhook authenticity using HMAC signature:
+
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhook(payload, signature, secret) {
+  const hmac = crypto.createHmac('sha256', secret);
+  const digest = hmac.update(payload).digest('hex');
+  return signature === `sha256=${digest}`;
+}
+
+// Check X-FSP-Signature header
+const isValid = verifyWebhook(
+  req.body,
+  req.headers['x-fsp-signature'],
+  WEBHOOK_SECRET
+);
+```
+
+## Error Handling
+
+### Error Response Format
+
+```json
+{
+  "error": {
+    "code": "invalid_request",
+    "message": "Missing required field: repository",
+    "details": {
+      "field": "repository",
+      "issue": "required"
+    }
+  }
+}
+```
+
+### Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `invalid_request` | 400 | Malformed request |
+| `authentication_failed` | 401 | Invalid API key |
+| `forbidden` | 403 | Insufficient permissions |
+| `not_found` | 404 | Resource not found |
+| `rate_limit_exceeded` | 429 | Too many requests |
+| `server_error` | 500 | Internal server error |
+
+## Pagination
+
+List endpoints support pagination:
+
+```http
+GET /v1/projects?page=2&per_page=50
+```
+
+Response includes pagination metadata:
+
+```json
+{
+  "data": [...],
+  "pagination": {
+    "page": 2,
+    "per_page": 50,
+    "total": 150,
+    "total_pages": 3,
+    "has_next": true,
+    "has_previous": true
+  }
+}
+```
+
+## Code Examples
+
+### Node.js
+
+```javascript
+const axios = require('axios');
+
+const fsp = axios.create({
+  baseURL: 'https://api.fullselfpublishing.com/v1',
+  headers: {
+    'Authorization': `Bearer ${process.env.FSP_API_KEY}`,
+    'Content-Type': 'application/json'
+  }
+});
+
+// List projects
+const projects = await fsp.get('/projects');
+
+// Generate content
+const generation = await fsp.post('/projects/proj_123/generate', {
+  platforms: ['wordpress', 'twitter']
+});
+```
+
+### Python
+
+```python
+import requests
+
+class FSPClient:
+    def __init__(self, api_key):
+        self.base_url = 'https://api.fullselfpublishing.com/v1'
+        self.headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        }
+
+    def list_projects(self):
+        response = requests.get(
+            f'{self.base_url}/projects',
+            headers=self.headers
+        )
+        return response.json()
+
+    def generate_content(self, project_id, platforms):
+        response = requests.post(
+            f'{self.base_url}/projects/{project_id}/generate',
+            headers=self.headers,
+            json={'platforms': platforms}
+        )
+        return response.json()
+
+# Usage
+client = FSPClient(os.getenv('FSP_API_KEY'))
+projects = client.list_projects()
+```
+
+### cURL
+
+```bash
+# List projects
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  https://api.fullselfpublishing.com/v1/projects
+
+# Generate content
+curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"platforms": ["wordpress", "twitter"]}' \
+  https://api.fullselfpublishing.com/v1/projects/proj_123/generate
+```
+
+## SDKs
+
+Official SDKs coming soon:
+- JavaScript/TypeScript
+- Python
+- PHP
+- Ruby
+- Go
+
+## Support
+
+- [GitHub Issues](https://github.com/fullselfpublishing/api-issues)
+- [API Status Page](https://status.fullselfpublishing.com)
+- [Contact Support](/support)
+
+---
+
+**Last Updated:** 2024-01-15
+**API Version:** v1

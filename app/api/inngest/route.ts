@@ -21,6 +21,12 @@ import {
   sendEmailReportJob,
   scheduleEmailReportsCron,
 } from "@/lib/inngest/functions/report-generation";
+import {
+  deadLetterQueueCron,
+  healthCheckCron,
+  performanceMetricsCron,
+  metricsCleanupCron,
+} from "@/lib/inngest/functions/monitoring-cron";
 
 /**
  * Register all Inngest functions
@@ -44,6 +50,12 @@ export const { GET, POST, PUT } = serve({
     exportDataJob,
     sendEmailReportJob,
     scheduleEmailReportsCron,
+
+    // Monitoring and performance
+    deadLetterQueueCron,
+    healthCheckCron,
+    performanceMetricsCron,
+    metricsCleanupCron,
   ],
   signingKey: process.env.INNGEST_SIGNING_KEY,
 });

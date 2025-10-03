@@ -58,7 +58,7 @@ export function useToastNotifications() {
       });
     },
 
-    custom: (component: React.ReactNode, options?: { duration?: number }) => {
+    custom: (component: (id: string | number) => React.ReactElement, options?: { duration?: number }) => {
       return toast.custom(component, options);
     },
 

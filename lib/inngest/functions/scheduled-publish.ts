@@ -14,6 +14,8 @@ import {
   markFailed,
 } from "@/lib/scheduling/queue";
 import { QueueStatus, ScheduleStatus } from "@prisma/client";
+import { recordJobExecution } from "@/lib/monitoring/metrics-collector";
+import { trackJobPerformance } from "@/lib/monitoring/performance-tracker";
 
 /**
  * Platform publishing result
@@ -174,6 +176,7 @@ export const itemPublishJob = inngest.createFunction(
   { event: "scheduled/publish.item" },
   async ({ event, step, attempt }) => {
     const { scheduleId, contentId, projectId } = event.data;
+    const startTime = Date.now();
 
     // Mark as processing
     await step.run("mark-processing", async () => {
@@ -280,6 +283,15 @@ export const itemPublishJob = inngest.createFunction(
           });
         });
 
+        // Record successful execution
+        const duration = Date.now() - startTime;
+        await recordJobExecution("item-scheduled-publish", true, duration, {
+          scheduleId,
+          contentId,
+          platforms: publishResults.length,
+        });
+        await trackJobPerformance("item-scheduled-publish", duration, true);
+
         return {
           success: true,
           scheduleId,
@@ -335,6 +347,15 @@ export const itemPublishJob = inngest.createFunction(
             );
           });
         }
+
+        // Record failed execution
+        const duration = Date.now() - startTime;
+        await recordJobExecution("item-scheduled-publish", false, duration, {
+          scheduleId,
+          error: errorMessage,
+          attempt,
+        });
+        await trackJobPerformance("item-scheduled-publish", duration, false);
 
         throw new Error(errorMessage);
       }

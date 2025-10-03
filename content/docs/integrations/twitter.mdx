@@ -1,0 +1,173 @@
+---
+title: "Twitter/X Integration Guide"
+description: "Automate tweets and threads from GitHub activity"
+platform: "twitter"
+---
+
+# Twitter/X Integration
+
+Post automated updates and threads to Twitter/X from your GitHub activity.
+
+## Prerequisites
+
+- Twitter/X account
+- Twitter Developer account (free)
+- Elevated API access (required for OAuth 2.0)
+
+## Setup Steps
+
+### Step 1: Create Twitter Developer App
+
+1. Go to [developer.twitter.com](https://developer.twitter.com)
+2. Sign in with your Twitter account
+3. Apply for developer access (if first time)
+4. Create a new project: **"Full Self Publishing Integration"**
+5. Create a new app within the project
+
+### Step 2: Generate API Credentials
+
+1. In your app settings, go to **"Keys and tokens"**
+2. Generate:
+   - **API Key** (Consumer Key)
+   - **API Secret** (Consumer Secret)
+   - **Access Token**
+   - **Access Token Secret**
+3. **Copy all credentials immediately** (you won't see secrets again)
+
+### Step 3: Configure API Permissions
+
+1. Go to **"User authentication settings"**
+2. Enable **OAuth 2.0**
+3. Set permissions: **Read and Write**
+4. Add callback URL: `https://fullselfpublishing.com/api/oauth/twitter/callback`
+5. Save settings
+
+### Step 4: Connect to Full Self Publishing
+
+1. Navigate to **Settings > Platforms > Twitter**
+2. Click **"Connect Twitter Account"**
+3. OAuth flow:
+   - You'll be redirected to Twitter
+   - Click **"Authorize app"**
+   - Redirected back to Full Self Publishing
+4. Status should show **"Connected"**
+
+**Alternative: Manual API Key Entry**
+1. Select **"API Keys"** method
+2. Enter all four credentials from Step 2
+3. Click **"Connect"**
+
+## Tweet Configuration
+
+### Content Settings
+
+- **Max Length:** 280 characters (auto-truncated)
+- **Thread Creation:** Posts longer than 280 chars become threads
+- **Link Inclusion:** Add GitHub links to tweets
+- **Hashtags:** Auto-generate or use custom hashtags
+
+### Tweet Templates
+
+Example short tweet template:
+```
+🚀 Just released {{version}} of {{project_name}}!
+
+{{summary}}
+
+{{github_url}}
+#OpenSource #DevUpdate
+```
+
+Example thread template (auto-split):
+```
+Thread: Recent updates to {{project_name}}
+
+1/n: {{introduction}}
+2/n: {{feature_1}}
+3/n: {{feature_2}}
+...
+n/n: Check out the full details: {{github_url}}
+```
+
+## Features
+
+### Character Limit Handling
+
+Full Self Publishing automatically:
+- Truncates at 280 chars for single tweets
+- Creates threads for longer content
+- Preserves code blocks with proper formatting
+- Ensures links fit within limits
+
+### Hashtag Strategy
+
+Configure hashtag behavior:
+- **Auto-generate:** AI suggests relevant hashtags
+- **Fixed hashtags:** Add specific tags to all tweets
+- **Topic-based:** Tags based on content type (release, bugfix, feature)
+- **Limit:** Recommended 2-3 hashtags per tweet
+
+### Media Attachments
+
+**Tweet with images:**
+1. Enable **"Include Images"** in Twitter settings
+2. AI generates relevant preview images
+3. Images uploaded via Twitter API
+4. Alt text auto-generated for accessibility
+
+**Supported formats:**
+- PNG, JPEG, GIF (up to 5MB)
+- Max 4 images per tweet
+
+## Publishing Workflow
+
+### Draft Review
+
+1. Generated tweets appear in **Content** tab
+2. Preview shows character count and thread structure
+3. Edit content directly or regenerate
+4. Click **"Approve"** when ready
+
+### Auto-Publishing
+
+Enable for hands-free posting:
+1. Toggle **"Auto-publish"** in Twitter settings
+2. Set time delay (recommended: 15 min review window)
+3. Tweets publish automatically after generation
+4. You can still cancel during delay
+
+## Best Practices
+
+- **Frequency:** Max 3-5 tweets per day recommended
+- **Timing:** Schedule for peak audience hours
+- **Engagement:** Use questions and calls-to-action
+- **Hashtags:** Research trending tags in your niche
+- **Threads:** Break complex updates into digestible chunks
+
+## Rate Limits
+
+Twitter API v2 limits:
+- Free tier: 50 posts/day
+- Basic tier: 100 posts/day
+- Recommended: 1 post every 4 hours max
+
+## Troubleshooting
+
+**"Duplicate content" error:**
+- Twitter rejects identical tweets within short time
+- Wait 24 hours or modify content
+
+**"Unauthorized" error:**
+- Re-authenticate your Twitter account
+- Check API credentials are current
+
+**Tweets not appearing:**
+- Check account isn't shadowbanned
+- Verify you authorized the correct account
+
+---
+
+**Related Guides:**
+- [LinkedIn Integration](/docs/integrations/linkedin)
+- [Content Templates](/docs/features/templates)
+- [Scheduling](/docs/features/scheduling)

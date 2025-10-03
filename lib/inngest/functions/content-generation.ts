@@ -9,6 +9,8 @@ import { prisma } from "@/lib/db";
 import { NonRetriableError } from "inngest";
 import { Octokit } from "@octokit/rest";
 import { ExecutionStatus } from "@prisma/client";
+import { recordJobExecution } from "@/lib/monitoring/metrics-collector";
+import { trackJobPerformance } from "@/lib/monitoring/performance-tracker";
 
 /**
  * GitHub activity context for AI generation
@@ -59,6 +61,7 @@ export const contentGenerationJob = inngest.createFunction(
   { event: "cron/content.generation" },
   async ({ event, step }) => {
     const { projectId, userId, triggeredBy } = event.data;
+    const startTime = Date.now();
 
     // Create execution record
     const execution = await step.run("create-execution-record", async () => {
@@ -214,6 +217,15 @@ export const contentGenerationJob = inngest.createFunction(
         }
       });
 
+      // Record successful execution
+      const duration = Date.now() - startTime;
+      await recordJobExecution("content-generation", true, duration, {
+        projectId,
+        generated: results.length,
+        successful: results.filter((r) => r.success).length,
+      });
+      await trackJobPerformance("content-generation", duration, true);
+
       return {
         success: true,
         activity: "detected",
@@ -243,6 +255,14 @@ export const contentGenerationJob = inngest.createFunction(
           await updateJobStats(cronJob.id, false);
         }
       });
+
+      // Record failed execution
+      const duration = Date.now() - startTime;
+      await recordJobExecution("content-generation", false, duration, {
+        error: error.message,
+        projectId,
+      });
+      await trackJobPerformance("content-generation", duration, false);
 
       throw error;
     }

@@ -13,6 +13,9 @@ import { Step1Welcome } from "@/components/onboarding/steps/step-1-welcome";
 import { Step2GitHub } from "@/components/onboarding/steps/step-2-github";
 import { Step3ContentTypes } from "@/components/onboarding/steps/step-3-content-types";
 import { Step4BrandVoice } from "@/components/onboarding/steps/step-4-brand-voice";
+import { Step5Platforms } from "@/components/onboarding/steps/step-5-platforms";
+import { Step6TestContent } from "@/components/onboarding/steps/step-6-test-content";
+import { Step7Review } from "@/components/onboarding/steps/step-7-review";
 import { Step8Complete } from "@/components/onboarding/steps/step-8-complete";
 import { OnboardingProgress } from "@/lib/onboarding/types";
 import { OnboardingState } from "@/lib/onboarding/state";
@@ -184,19 +187,13 @@ export default function OnboardingPage() {
         <Step4BrandVoice onComplete={(data) => handleStepComplete(4, data)} />
       )}
       {currentStep === 5 && (
-        <div className="text-center p-12">
-          <p className="text-gray-600">Platform connection step (Step 5) - Implementation pending</p>
-        </div>
+        <Step5Platforms onComplete={(data) => handleStepComplete(5, data)} />
       )}
       {currentStep === 6 && (
-        <div className="text-center p-12">
-          <p className="text-gray-600">Content generation step (Step 6) - Implementation pending</p>
-        </div>
+        <Step6TestContent onComplete={(data) => handleStepComplete(6, data)} />
       )}
       {currentStep === 7 && (
-        <div className="text-center p-12">
-          <p className="text-gray-600">Review & Customize step (Step 7) - Implementation pending</p>
-        </div>
+        <Step7Review onComplete={(data) => handleStepComplete(7, data)} />
       )}
       {currentStep === 8 && (
         <Step8Complete

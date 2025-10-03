@@ -8,6 +8,8 @@ import { inngest } from "@/lib/inngest/client";
 import { prisma } from "@/lib/db";
 import { NonRetriableError } from "inngest";
 import { put } from "@vercel/blob";
+import { recordJobExecution } from "@/lib/monitoring/metrics-collector";
+import { trackJobPerformance } from "@/lib/monitoring/performance-tracker";
 import {
   ExportStatus,
   ReportStatus,
@@ -59,6 +61,7 @@ export const generateReportJob = inngest.createFunction(
   { event: "report/generate" },
   async ({ event, step }) => {
     const { reportConfigId, userId, triggeredBy } = event.data;
+    const startTime = Date.now();
 
     // Create report history record
     const reportHistory = await step.run("create-report-history", async () => {
@@ -206,6 +209,15 @@ export const generateReportJob = inngest.createFunction(
         });
       }
 
+      // Record successful execution
+      const duration = Date.now() - startTime;
+      await recordJobExecution("generate-report", true, duration, {
+        reportConfigId,
+        format: config.outputFormat,
+        fileSize: uploadResult.size,
+      });
+      await trackJobPerformance("generate-report", duration, true);
+
       return {
         success: true,
         reportHistoryId: reportHistory.id,
@@ -225,6 +237,14 @@ export const generateReportJob = inngest.createFunction(
           },
         });
       });
+
+      // Record failed execution
+      const duration = Date.now() - startTime;
+      await recordJobExecution("generate-report", false, duration, {
+        error: error.message,
+        reportConfigId,
+      });
+      await trackJobPerformance("generate-report", duration, false);
 
       throw error;
     }
@@ -256,6 +276,7 @@ export const exportDataJob = inngest.createFunction(
       dateTo,
       options,
     } = event.data;
+    const startTime = Date.now();
 
     // Create export job record
     const exportJob = await step.run("create-export-job", async () => {
@@ -379,6 +400,15 @@ export const exportDataJob = inngest.createFunction(
         });
       });
 
+      // Record successful execution
+      const duration = Date.now() - startTime;
+      await recordJobExecution("export-data", true, duration, {
+        exportType,
+        format: outputFormat,
+        fileSize: uploadResult.size,
+      });
+      await trackJobPerformance("export-data", duration, true);
+
       return {
         success: true,
         exportJobId: exportJob.id,
@@ -398,6 +428,14 @@ export const exportDataJob = inngest.createFunction(
           },
         });
       });
+
+      // Record failed execution
+      const duration = Date.now() - startTime;
+      await recordJobExecution("export-data", false, duration, {
+        error: error.message,
+        exportType,
+      });
+      await trackJobPerformance("export-data", duration, false);
 
       throw error;
     }
