@@ -1,8 +1,8 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createAuditLog } from "@/lib/monitoring/audit";
 import { AuditResource } from "@prisma/client";
+import { updateSession } from "@/lib/supabase/middleware";
 
 /**
  * Determine audit resource type from request path
@@ -113,35 +113,42 @@ async function auditRequest(req: NextRequest, userId?: string, userEmail?: strin
 }
 
 // Define protected routes
-const isProtectedRoute = createRouteMatcher([
-  "/admin(.*)",
-  "/settings(.*)",
-  "/dashboard(.*)",
-  "/api/projects(.*)",
-  "/api/content(.*)",
-  "/api/platforms(.*)",
-  "/api/settings(.*)",
-  "/api/cron(.*)",
-  "/api/email(.*)",
-  "/api/user(.*)",
-]);
+const protectedRoutes = [
+  "/admin",
+  "/settings",
+  "/dashboard",
+  "/api/projects",
+  "/api/content",
+  "/api/platforms",
+  "/api/settings",
+  "/api/cron",
+  "/api/email",
+  "/api/user",
+];
 
-export default clerkMiddleware(async (auth, req) => {
+function isProtectedRoute(pathname: string): boolean {
+  return protectedRoutes.some(route => pathname.startsWith(route));
+}
+
+export async function middleware(req: NextRequest) {
+  const { response, user } = await updateSession(req);
+
   // Protect routes that require authentication
-  if (isProtectedRoute(req)) {
-    await auth.protect();
+  if (isProtectedRoute(req.nextUrl.pathname)) {
+    if (!user) {
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('redirectTo', req.nextUrl.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
-
-  // Get user info from auth
-  const { userId } = await auth();
 
   // Audit the request if user is authenticated
-  if (userId) {
-    await auditRequest(req, userId, undefined);
+  if (user) {
+    await auditRequest(req, user.id, user.email);
   }
 
-  return NextResponse.next();
-});
+  return response;
+}
 
 export const config = {
   matcher: [
