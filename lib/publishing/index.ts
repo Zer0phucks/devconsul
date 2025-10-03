@@ -62,12 +62,29 @@ export {
   getRetryStatus,
 } from './retry';
 
-// Dry Run
+// Dry Run - Legacy API
 export {
   dryRunPublish,
   validateAllPlatforms,
   generateValidationReport,
+  executeDryRunWithTracking,
 } from './dry-run';
+
+// Dry Run - Comprehensive Testing Engine
+export {
+  executeDryRun,
+  validateConnection,
+  validateCredentials,
+  validateContent,
+  validateCharacterLimits,
+  validateImages,
+} from './dry-run-engine';
+
+export type {
+  DryRunConfig,
+  DryRunProgress,
+  MockPublishResult,
+} from './dry-run-engine';
 
 // Analytics
 export {

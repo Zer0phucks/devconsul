@@ -2,14 +2,16 @@
  * Dry Run Mode
  *
  * Test publishing without actually publishing - validation only
+ * Legacy API - use dry-run-engine.ts for new comprehensive testing
  */
 
 import { prisma } from '@/lib/db';
 import { validateContentForPlatform } from '@/lib/validations/publishing';
+import { executeDryRun as executeComprehensiveDryRun } from './dry-run-engine';
 import type { DryRunResult } from '@/lib/validations/publishing';
 
 // ============================================
-// DRY RUN VALIDATION
+// DRY RUN VALIDATION (LEGACY)
 // ============================================
 
 /**
@@ -251,3 +253,40 @@ export function generateValidationReport(
 
   return report;
 }
+
+// ============================================
+// NEW COMPREHENSIVE DRY RUN API
+// ============================================
+
+/**
+ * Execute comprehensive dry run with full test tracking
+ * Uses new TestRun and ValidationResult models
+ */
+export async function executeDryRunWithTracking(
+  projectId: string,
+  userId: string,
+  contentId: string,
+  platformIds: string[],
+  options: {
+    testType?: 'DRY_RUN' | 'VALIDATION_ONLY' | 'CONNECTIVITY' | 'FULL_FLOW';
+    name?: string;
+    description?: string;
+  } = {}
+) {
+  return executeComprehensiveDryRun(
+    projectId,
+    userId,
+    contentId,
+    platformIds,
+    {
+      testType: options.testType || 'DRY_RUN',
+      name: options.name,
+      description: options.description,
+    }
+  );
+}
+
+/**
+ * Export comprehensive dry run for external use
+ */
+export { executeDryRun } from './dry-run-engine';

@@ -38,6 +38,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-email/components": "^0.5.5",
     "@sendgrid/mail": "^8.1.6",
+    "@sentry/nextjs": "^10.17.0",
     "@tiptap/extension-code-block-lowlight": "^3.6.3",
     "@tiptap/extension-image": "^3.6.3",
     "@tiptap/extension-link": "^3.6.3",

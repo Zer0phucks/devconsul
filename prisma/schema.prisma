@@ -247,10 +247,13 @@ model Content {
   versions Content[] @relation("ContentVersions")
 
   // Relationships
-  project      Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  publications ContentPublication[]
-  contentImages ContentImage[]
+  project          Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  publications     ContentPublication[]
+  contentImages    ContentImage[]
   scheduledContent ScheduledContent[]
+  approvals        ContentApproval[]
+  safetyChecks     ContentSafetyCheck[]
+  versionHistory   ContentVersion[]     @relation("ContentVersionHistory")
 
   @@index([projectId])
   @@index([status])
@@ -571,8 +574,8 @@ model EmailCampaign {
   platformId    String? // Reference to Platform if using platform config
 
   // Relationships
-  project    Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  recipients EmailRecipient[]
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  recipients  EmailRecipient[]
   emailImages EmailImage[]
 
   @@index([projectId])
@@ -734,33 +737,33 @@ model Template {
 
   // Template details
   name        String
-  description String? @db.Text
+  description String?          @db.Text
   platform    TemplatePlatform
   category    String? // e.g., "technical", "announcement", "tutorial"
 
   // Template content with variable placeholders
-  content     String  @db.Text // Template body with {{variables}}
-  subject     String? // For email/newsletter templates
+  content String  @db.Text // Template body with {{variables}}
+  subject String? // For email/newsletter templates
 
   // Template metadata
-  variables   String[] // List of available variables: ["repository", "activity", "date"]
-  tags        String[]
-  isDefault   Boolean  @default(false) // System default template
-  isPublic    Boolean  @default(false) // Shareable template
+  variables String[] // List of available variables: ["repository", "activity", "date"]
+  tags      String[]
+  isDefault Boolean  @default(false) // System default template
+  isPublic  Boolean  @default(false) // Shareable template
 
   // Version control
-  version     Int      @default(1)
-  parentId    String? // For template versions
-  parent      Template?  @relation("TemplateVersions", fields: [parentId], references: [id])
-  versions    Template[] @relation("TemplateVersions")
+  version  Int        @default(1)
+  parentId String? // For template versions
+  parent   Template?  @relation("TemplateVersions", fields: [parentId], references: [id])
+  versions Template[] @relation("TemplateVersions")
 
   // Usage analytics
-  usageCount     Int      @default(0)
-  lastUsedAt     DateTime?
+  usageCount         Int       @default(0)
+  lastUsedAt         DateTime?
   effectivenessScore Float? // A/B testing score
 
   // Relationships
-  promptLibrary PromptLibrary[]
+  promptLibrary  PromptLibrary[]
   contentHistory ContentTemplateHistory[]
 
   @@index([projectId])
@@ -799,41 +802,41 @@ model PromptLibrary {
 
   // Prompt details
   name        String
-  description String? @db.Text
+  description String?        @db.Text
   category    PromptCategory
 
   // Prompt content
-  systemPrompt String  @db.Text // System instructions for AI
-  userPrompt   String  @db.Text // User prompt template with {{variables}}
+  systemPrompt String @db.Text // System instructions for AI
+  userPrompt   String @db.Text // User prompt template with {{variables}}
 
   // Associated template (optional)
-  templateId  String?
-  template    Template? @relation(fields: [templateId], references: [id])
+  templateId String?
+  template   Template? @relation(fields: [templateId], references: [id])
 
   // Prompt configuration
-  variables     String[] // Variables used in prompts
-  platform      TemplatePlatform
-  contentType   String? // "technical", "marketing", "educational"
-  tone          String? // "professional", "casual", "friendly"
-  targetLength  Int? // Target word/character count
+  variables    String[] // Variables used in prompts
+  platform     TemplatePlatform
+  contentType  String? // "technical", "marketing", "educational"
+  tone         String? // "professional", "casual", "friendly"
+  targetLength Int? // Target word/character count
 
   // Metadata
-  tags          String[]
-  isDefault     Boolean @default(false)
-  isPublic      Boolean @default(false)
+  tags      String[]
+  isDefault Boolean  @default(false)
+  isPublic  Boolean  @default(false)
 
   // Version control
-  version       Int     @default(1)
-  parentId      String?
-  parent        PromptLibrary?  @relation("PromptVersions", fields: [parentId], references: [id])
-  versions      PromptLibrary[] @relation("PromptVersions")
+  version  Int             @default(1)
+  parentId String?
+  parent   PromptLibrary?  @relation("PromptVersions", fields: [parentId], references: [id])
+  versions PromptLibrary[] @relation("PromptVersions")
 
   // Effectiveness tracking
-  usageCount           Int      @default(0)
-  lastUsedAt           DateTime?
-  averageRating        Float?
-  successRate          Float? // % of successful generations
-  averageTokenUsage    Int?
+  usageCount        Int       @default(0)
+  lastUsedAt        DateTime?
+  averageRating     Float?
+  successRate       Float? // % of successful generations
+  averageTokenUsage Int?
 
   @@index([projectId])
   @@index([userId])
@@ -870,11 +873,11 @@ model ContentTemplateHistory {
   template   Template? @relation(fields: [templateId], references: [id])
 
   // Prompt used
-  promptId   String?
+  promptId String?
 
   // Generation metadata
-  variables  Json // Variables substituted: {repository: "...", activity: "..."}
-  platform   TemplatePlatform
+  variables Json // Variables substituted: {repository: "...", activity: "..."}
+  platform  TemplatePlatform
 
   // Performance tracking
   generatedContent String  @db.Text
@@ -883,10 +886,10 @@ model ContentTemplateHistory {
   timeToEdit       Int? // Seconds spent editing
 
   // Effectiveness metrics
-  wasPublished     Boolean   @default(false)
-  publishedAt      DateTime?
-  engagementScore  Float? // Clicks, opens, shares, etc.
-  userRating       Int? // 1-5 stars
+  wasPublished    Boolean   @default(false)
+  publishedAt     DateTime?
+  engagementScore Float? // Clicks, opens, shares, etc.
+  userRating      Int? // 1-5 stars
 
   @@index([templateId])
   @@index([contentId])
@@ -916,40 +919,40 @@ model Image {
   aspectRatio  Float
 
   // Storage
-  storageUrl    String // URL to stored image (Vercel Blob/R2)
-  storagePath   String // Storage path/key
+  storageUrl      String // URL to stored image (Vercel Blob/R2)
+  storagePath     String // Storage path/key
   storageProvider String @default("vercel-blob") // vercel-blob, cloudflare-r2, s3
 
   // Image data
-  alt           String? @db.Text
-  caption       String? @db.Text
-  title         String?
-  description   String? @db.Text
+  alt         String? @db.Text
+  caption     String? @db.Text
+  title       String?
+  description String? @db.Text
 
   // Categorization
   tags       String[]
   categories String[]
 
   // Generation metadata
-  isAIGenerated  Boolean  @default(false)
-  aiModel        String? // dall-e-3, stable-diffusion
-  aiPrompt       String?  @db.Text
-  aiRevisedPrompt String? @db.Text // DALL-E revised prompt
-  aiQuality      String? // standard, hd
-  aiStyle        String? // vivid, natural
-  generatedAt    DateTime?
+  isAIGenerated   Boolean   @default(false)
+  aiModel         String? // dall-e-3, stable-diffusion
+  aiPrompt        String?   @db.Text
+  aiRevisedPrompt String?   @db.Text // DALL-E revised prompt
+  aiQuality       String? // standard, hd
+  aiStyle         String? // vivid, natural
+  generatedAt     DateTime?
 
   // Platform-specific versions
   platformVersions Json? // Store different sizes/formats per platform
 
   // Usage tracking
-  usageCount    Int      @default(0)
-  lastUsedAt    DateTime?
+  usageCount Int       @default(0)
+  lastUsedAt DateTime?
 
   // Optimization
-  isOptimized   Boolean @default(false)
-  originalSize  Int? // Original file size before optimization
-  optimizedAt   DateTime?
+  isOptimized  Boolean   @default(false)
+  originalSize Int? // Original file size before optimization
+  optimizedAt  DateTime?
 
   // Relations
   contentImages ContentImage[]
@@ -1040,11 +1043,11 @@ model ImageGenerationJob {
   description String? @db.Text
 
   // Generation parameters
-  prompts      String[] // Array of prompts to generate
-  model        String   @default("dall-e-3")
-  quality      String   @default("standard") // standard, hd
-  style        String   @default("vivid") // vivid, natural
-  size         String   @default("1024x1024") // 1024x1024, 1792x1024, 1024x1792
+  prompts String[] // Array of prompts to generate
+  model   String   @default("dall-e-3")
+  quality String   @default("standard") // standard, hd
+  style   String   @default("vivid") // vivid, natural
+  size    String   @default("1024x1024") // 1024x1024, 1792x1024, 1024x1792
 
   // Job status
   status         ImageJobStatus @default(PENDING)
@@ -1098,7 +1101,7 @@ model ScheduledContent {
   localTime    String? // Human-readable local time (e.g., "2025-01-15 09:00 AM PST")
 
   // Recurring schedule (optional)
-  isRecurring      Boolean  @default(false)
+  isRecurring      Boolean   @default(false)
   recurringPattern String? // cron-like pattern or "daily|weekly|monthly"
   recurringConfig  Json? // Additional recurrence config (days of week, etc.)
   recurringUntil   DateTime? // End date for recurring schedule
@@ -1116,10 +1119,10 @@ model ScheduledContent {
   failedAt     DateTime? // When failed
 
   // Priority and retry
-  priority   Int     @default(5) // 1-10, higher = more priority
-  retryCount Int     @default(0)
-  maxRetries Int     @default(3)
-  retryDelay Int     @default(300) // Seconds between retries
+  priority   Int @default(5) // 1-10, higher = more priority
+  retryCount Int @default(0)
+  maxRetries Int @default(3)
+  retryDelay Int @default(300) // Seconds between retries
 
   // Status and error tracking
   status       ScheduleStatus @default(SCHEDULED)
@@ -1131,7 +1134,7 @@ model ScheduledContent {
   conflictNote  String?  @db.Text
 
   // Inngest job tracking
-  inngestJobId  String? // Inngest scheduled function run ID
+  inngestJobId   String? // Inngest scheduled function run ID
   inngestEventId String? // Inngest event ID
 
   // Metadata
@@ -1184,11 +1187,11 @@ model QueueMetrics {
   periodEnd   DateTime
 
   // Throughput metrics
-  totalQueued     Int @default(0)
-  totalProcessed  Int @default(0)
-  totalCompleted  Int @default(0)
-  totalFailed     Int @default(0)
-  totalCancelled  Int @default(0)
+  totalQueued    Int @default(0)
+  totalProcessed Int @default(0)
+  totalCompleted Int @default(0)
+  totalFailed    Int @default(0)
+  totalCancelled Int @default(0)
 
   // Performance metrics
   avgWaitTime       Int? // Average time in queue (seconds)
@@ -1224,10 +1227,10 @@ model ScheduleConflict {
   conflictReason String       @db.Text
 
   // Resolution
-  resolved      Boolean   @default(false)
-  resolvedAt    DateTime?
-  resolution    String?   @db.Text // How it was resolved
-  resolvedBy    String? // User ID who resolved it
+  resolved   Boolean   @default(false)
+  resolvedAt DateTime?
+  resolution String?   @db.Text // How it was resolved
+  resolvedBy String? // User ID who resolved it
 
   // Severity
   severity ConflictSeverity @default(WARNING)
@@ -1276,10 +1279,10 @@ model ReportConfig {
   outputFormat ReportFormat @default(PDF)
 
   // Report sections and configuration
-  sections     String[] // Array of section identifiers
-  metrics      String[] // Metrics to include
-  charts       String[] // Chart types to include
-  dateRange    Json? // Custom date range configuration
+  sections  String[] // Array of section identifiers
+  metrics   String[] // Metrics to include
+  charts    String[] // Chart types to include
+  dateRange Json? // Custom date range configuration
 
   // Filters
   platformFilters String[] // Filter by platforms
@@ -1287,12 +1290,12 @@ model ReportConfig {
   customFilters   Json? // Custom filtering logic
 
   // Scheduling and delivery
-  isScheduled      Boolean   @default(false)
-  schedulePattern  String? // Cron expression
-  deliveryMethod   String? // email, download, webhook
-  deliveryConfig   Json? // Email addresses, webhook URLs, etc.
-  lastGeneratedAt  DateTime?
-  nextScheduledAt  DateTime?
+  isScheduled     Boolean   @default(false)
+  schedulePattern String? // Cron expression
+  deliveryMethod  String? // email, download, webhook
+  deliveryConfig  Json? // Email addresses, webhook URLs, etc.
+  lastGeneratedAt DateTime?
+  nextScheduledAt DateTime?
 
   // Customization
   branding Json? // Logo, colors, fonts
@@ -1300,9 +1303,9 @@ model ReportConfig {
   options  Json? // Additional report options
 
   // Metadata
-  isPublic    Boolean @default(false)
-  tags        String[]
-  category    String?
+  isPublic Boolean  @default(false)
+  tags     String[]
+  category String?
 
   // Relationships
   history ReportHistory[]
@@ -1348,19 +1351,19 @@ model ReportHistory {
   reportType   ReportType
   outputFormat ReportFormat
   reportName   String
-  description  String? @db.Text
+  description  String?      @db.Text
 
   // Generation details
-  generatedAt   DateTime   @default(now())
+  generatedAt    DateTime @default(now())
   generationTime Int? // Milliseconds
-  dataFrom      DateTime // Start of date range
-  dataTo        DateTime // End of date range
+  dataFrom       DateTime // Start of date range
+  dataTo         DateTime // End of date range
 
   // Storage
-  fileUrl      String? // URL to generated file
-  filePath     String? // Storage path
-  fileSize     Int? // Bytes
-  expiresAt    DateTime? // For temporary files
+  fileUrl   String? // URL to generated file
+  filePath  String? // Storage path
+  fileSize  Int? // Bytes
+  expiresAt DateTime? // For temporary files
 
   // Content summary
   recordCount    Int? // Number of records included
@@ -1413,14 +1416,14 @@ model EmailReportSubscription {
   updatedAt DateTime @updatedAt
 
   // Subscription details
-  reportType      EmailReportType
-  frequency       String // daily, weekly, monthly, custom
-  deliveryDay     Int? // Day of week (1-7) or month (1-31)
-  deliveryTime    String           @default("09:00") // HH:MM format
-  timezone        String           @default("UTC")
+  reportType   EmailReportType
+  frequency    String // daily, weekly, monthly, custom
+  deliveryDay  Int? // Day of week (1-7) or month (1-31)
+  deliveryTime String          @default("09:00") // HH:MM format
+  timezone     String          @default("UTC")
 
   // Recipients
-  recipients String[] // Email addresses
+  recipients   String[] // Email addresses
   ccRecipients String[] // CC email addresses
 
   // Filters and customization
@@ -1469,13 +1472,13 @@ model ExportJob {
   exportType   ExportType
   outputFormat ReportFormat
   name         String?
-  description  String? @db.Text
+  description  String?      @db.Text
 
   // Export parameters
-  dateFrom     DateTime?
-  dateTo       DateTime?
-  filters      Json? // Export filters
-  options      Json? // Export options
+  dateFrom DateTime?
+  dateTo   DateTime?
+  filters  Json? // Export filters
+  options  Json? // Export options
 
   // Processing status
   status         ExportStatus @default(PENDING)
@@ -1485,10 +1488,10 @@ model ExportJob {
   errorCount     Int          @default(0)
 
   // Results
-  fileUrl      String? // Download URL
-  filePath     String? // Storage path
-  fileSize     Int? // Bytes
-  expiresAt    DateTime? // Auto-delete after expiry
+  fileUrl   String? // Download URL
+  filePath  String? // Storage path
+  fileSize  Int? // Bytes
+  expiresAt DateTime? // Auto-delete after expiry
 
   // Timing
   startedAt   DateTime?
@@ -1561,8 +1564,8 @@ model RepositoryInsights {
   issueStats Json? // {opened, closed, avgCloseTime, staleIssues}
 
   // Contributor data
-  contributorCount   Int   @default(0)
-  topContributors    Json? // Array of {login, commits, prs, avatar}
+  contributorCount     Int    @default(0)
+  topContributors      Json? // Array of {login, commits, prs, avatar}
   contributorDiversity Float? // Diversity score 0-1
 
   // Language breakdown
@@ -1576,14 +1579,14 @@ model RepositoryInsights {
   branchStats Json? // {name, commitCount, lastActivity}
 
   // Code velocity metrics
-  commitVelocity     Float? // Commits per week
-  prMergeRate        Float? // PRs merged per week
+  commitVelocity      Float? // Commits per week
+  prMergeRate         Float? // PRs merged per week
   issueResolutionRate Float? // Issues closed per week
 
   // Health score (0-100)
-  healthScore      Int?   @default(0)
-  healthFactors    Json? // Breakdown of health score factors
-  healthTrends     Json? // Historical health trend data
+  healthScore   Int?  @default(0)
+  healthFactors Json? // Breakdown of health score factors
+  healthTrends  Json? // Historical health trend data
 
   // Newsworthy items (AI-detected)
   newsworthyItems Json? // Array of newsworthy events with scores
@@ -1631,39 +1634,39 @@ model ContributorStats {
   periodEnd   DateTime
 
   // Contribution counts
-  totalCommits      Int @default(0)
-  totalPRs          Int @default(0)
-  totalIssues       Int @default(0)
-  totalReviews      Int @default(0)
-  totalReleases     Int @default(0)
+  totalCommits  Int @default(0)
+  totalPRs      Int @default(0)
+  totalIssues   Int @default(0)
+  totalReviews  Int @default(0)
+  totalReleases Int @default(0)
 
   // Code statistics
-  linesAdded    Int @default(0)
-  linesDeleted  Int @default(0)
-  filesChanged  Int @default(0)
+  linesAdded   Int @default(0)
+  linesDeleted Int @default(0)
+  filesChanged Int @default(0)
 
   // Engagement metrics
   firstContribution DateTime?
   lastContribution  DateTime?
   activeStreaks     Json? // Array of {start, end, days}
-  contributionDays  Int   @default(0) // Unique days with contributions
+  contributionDays  Int       @default(0) // Unique days with contributions
 
   // PR metrics
-  prsMerged       Int @default(0)
-  prsReviewed     Int @default(0)
-  avgPRSize       Float? // Average lines changed per PR
-  avgReviewTime   Float? // Average hours to review
+  prsMerged     Int    @default(0)
+  prsReviewed   Int    @default(0)
+  avgPRSize     Float? // Average lines changed per PR
+  avgReviewTime Float? // Average hours to review
 
   // Issue metrics
-  issuesOpened  Int @default(0)
-  issuesClosed  Int @default(0)
+  issuesOpened    Int @default(0)
+  issuesClosed    Int @default(0)
   issuesCommented Int @default(0)
 
   // Language expertise
   languageBreakdown Json? // {language: commitCount}
 
   // Impact score (0-100)
-  impactScore  Int?  @default(0)
+  impactScore   Int?  @default(0)
   impactFactors Json? // Breakdown of impact calculation
 
   // Activity patterns
@@ -1687,34 +1690,34 @@ model NewsworthyEvent {
   updatedAt DateTime @updatedAt
 
   // Event details
-  eventType     NewsworthyType
-  eventDate     DateTime
-  title         String
-  description   String         @db.Text
-  htmlUrl       String? // GitHub URL to event
+  eventType   NewsworthyType
+  eventDate   DateTime
+  title       String
+  description String         @db.Text
+  htmlUrl     String? // GitHub URL to event
 
   // Event data (commit SHA, PR number, issue number, etc.)
   eventData Json
 
   // AI analysis
-  newsworthinessScore Float  @default(0) // 0-1 confidence score
-  aiReasoning         String @db.Text // Why AI thinks this is newsworthy
+  newsworthinessScore Float   @default(0) // 0-1 confidence score
+  aiReasoning         String  @db.Text // Why AI thinks this is newsworthy
   aiModel             String? // Model used for detection
 
   // Classification
-  category    String[] // ["feature", "bugfix", "breaking_change", "security"]
-  impact      EventImpact @default(MEDIUM)
-  tags        String[]
+  category String[] // ["feature", "bugfix", "breaking_change", "security"]
+  impact   EventImpact @default(MEDIUM)
+  tags     String[]
 
   // User feedback
-  userRating       Int? // 1-5 stars, did user find this useful?
-  userDismissed    Boolean  @default(false)
-  userBookmarked   Boolean  @default(false)
+  userRating     Int? // 1-5 stars, did user find this useful?
+  userDismissed  Boolean @default(false)
+  userBookmarked Boolean @default(false)
 
   // Publication tracking
-  wasPublished   Boolean   @default(false)
-  publishedAt    DateTime?
-  publishedTo    String[] // Platform IDs
+  wasPublished Boolean   @default(false)
+  publishedAt  DateTime?
+  publishedTo  String[] // Platform IDs
 
   @@index([projectId])
   @@index([eventType])
@@ -1764,15 +1767,15 @@ model ContentMetrics {
   periodType  MetricPeriodType @default(DAILY)
 
   // Content generation metrics
-  totalGenerated       Int @default(0)
-  totalGeneratedTokens Int @default(0)
-  totalGeneratedCost   Float @default(0)
+  totalGenerated        Int    @default(0)
+  totalGeneratedTokens  Int    @default(0)
+  totalGeneratedCost    Float  @default(0)
   generationSuccessRate Float? // Percentage of successful generations
 
   // Publishing metrics
-  totalPublished    Int @default(0)
-  totalFailed       Int @default(0)
-  totalScheduled    Int @default(0)
+  totalPublished     Int    @default(0)
+  totalFailed        Int    @default(0)
+  totalScheduled     Int    @default(0)
   publishSuccessRate Float? // Percentage of successful publishes
 
   // Content by type
@@ -1785,12 +1788,12 @@ model ContentMetrics {
   platformBreakdown Json?
 
   // AI provider breakdown
-  openaiGenerations     Int @default(0)
-  anthropicGenerations  Int @default(0)
-  openaiTokens          Int @default(0)
-  anthropicTokens       Int @default(0)
-  openaiCost            Float @default(0)
-  anthropicCost         Float @default(0)
+  openaiGenerations    Int   @default(0)
+  anthropicGenerations Int   @default(0)
+  openaiTokens         Int   @default(0)
+  anthropicTokens      Int   @default(0)
+  openaiCost           Float @default(0)
+  anthropicCost        Float @default(0)
 
   // Content velocity
   avgContentPerDay   Float?
@@ -1798,8 +1801,8 @@ model ContentMetrics {
   avgContentPerMonth Float?
 
   // Quality metrics
-  avgEditDistance    Float? // How much AI content was edited
-  avgTimeToPublish   Int? // Average seconds from generation to publish
+  avgEditDistance  Float? // How much AI content was edited
+  avgTimeToPublish Int? // Average seconds from generation to publish
 
   @@unique([projectId, periodStart, periodEnd, periodType])
   @@index([projectId])
@@ -1821,12 +1824,12 @@ enum MetricPeriodType {
 
 // Platform-specific engagement metrics
 model PlatformMetrics {
-  id        String   @id @default(cuid())
-  projectId String
+  id         String   @id @default(cuid())
+  projectId  String
   platformId String
-  contentId String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  contentId  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Time period
   periodStart DateTime
@@ -1844,12 +1847,12 @@ model PlatformMetrics {
   impressions Int? @default(0)
 
   // Calculated metrics
-  engagementRate Float? // (likes + shares + comments) / impressions
+  engagementRate   Float? // (likes + shares + comments) / impressions
   clickThroughRate Float? // clicks / impressions
 
   // Follower/subscriber metrics
-  followers    Int?
-  subscribers  Int?
+  followers      Int?
+  subscribers    Int?
   followerGrowth Int? // Net change in followers
 
   // Platform-specific metrics (JSON for flexibility)
@@ -1937,7 +1940,7 @@ model CostSummary {
   periodType  MetricPeriodType @default(MONTHLY)
 
   // Total costs
-  totalCost Float @default(0)
+  totalCost Float  @default(0)
   currency  String @default("USD")
 
   // Cost by service category
@@ -1948,12 +1951,12 @@ model CostSummary {
   emailServiceCost Float @default(0)
 
   // Cost by provider
-  openaiCost     Float @default(0)
-  anthropicCost  Float @default(0)
-  vercelCost     Float @default(0)
-  resendCost     Float @default(0)
-  sendgridCost   Float @default(0)
-  mailchimpCost  Float @default(0)
+  openaiCost       Float @default(0)
+  anthropicCost    Float @default(0)
+  vercelCost       Float @default(0)
+  resendCost       Float @default(0)
+  sendgridCost     Float @default(0)
+  mailchimpCost    Float @default(0)
   cloudflareR2Cost Float @default(0)
 
   // Usage metrics
@@ -1967,7 +1970,7 @@ model CostSummary {
 
   // Budget tracking
   budgetLimit   Float?
-  budgetUsed    Float @default(0)
+  budgetUsed    Float  @default(0)
   budgetPercent Float? // budgetUsed / budgetLimit * 100
 
   @@unique([projectId, periodStart, periodEnd, periodType])
@@ -2003,13 +2006,13 @@ model ContentPerformance {
   engagementRate   Float?
 
   // Rankings (updated periodically)
-  rankOverall        Int?
-  rankInCategory     Int?
-  rankOnPlatform     Int?
+  rankOverall    Int?
+  rankInCategory Int?
+  rankOnPlatform Int?
 
   // Time-based performance
-  firstDayViews     Int?
-  firstWeekViews    Int?
+  firstDayViews      Int?
+  firstWeekViews     Int?
   peakEngagementDate DateTime?
 
   @@unique([contentId, platform])
@@ -2030,7 +2033,7 @@ model AnalyticsEvent {
   // Event details
   eventType   AnalyticsEventType
   eventName   String
-  description String? @db.Text
+  description String?            @db.Text
 
   // Associated resources
   userId     String?
@@ -2041,10 +2044,10 @@ model AnalyticsEvent {
   metadata Json?
 
   // Metrics
-  value      Float?
-  duration   Int? // Milliseconds
-  success    Boolean @default(true)
-  errorMsg   String? @db.Text
+  value    Float?
+  duration Int? // Milliseconds
+  success  Boolean @default(true)
+  errorMsg String? @db.Text
 
   @@index([projectId])
   @@index([eventType])
@@ -2102,4 +2105,888 @@ model UserAnalytics {
   @@index([createdAt])
   @@index([action])
   @@map("user_analytics")
+}
+
+// ============================================
+// APPROVAL WORKFLOW & CONTENT SAFETY
+// ============================================
+
+// Content approval requests and workflow
+model ContentApproval {
+  id        String   @id @default(cuid())
+  contentId String
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Approval request details
+  requestedBy String // User ID who requested approval
+  requestedAt DateTime @default(now())
+
+  // Assignment
+  assignedTo String[] // User IDs who can approve (empty = all team members)
+  assignedAt DateTime?
+
+  // Approval status and workflow
+  status   ApprovalStatus   @default(PENDING)
+  priority ApprovalPriority @default(MEDIUM)
+
+  // Approval result
+  approvedBy String? // User ID who approved/rejected
+  approvedAt DateTime?
+  rejectedBy String?
+  rejectedAt DateTime?
+  decision   ApprovalDecision?
+
+  // Feedback and comments
+  requestNotes String? @db.Text // Notes from requester
+  feedback     String? @db.Text // Feedback from approver
+
+  // Escalation
+  escalatedAt      DateTime?
+  escalatedTo      String? // User ID for escalation
+  escalationReason String?   @db.Text
+
+  // Auto-approval rules
+  autoApproved     Boolean @default(false)
+  autoApprovalRule String? // Rule that triggered auto-approval
+
+  // Audit trail
+  history Json? // Array of status changes with timestamps
+
+  // Metadata
+  metadata Json?
+
+  // Relationships
+  content  Content           @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  comments ApprovalComment[]
+
+  @@index([contentId])
+  @@index([projectId])
+  @@index([status])
+  @@index([priority])
+  @@index([requestedBy])
+  @@index([assignedTo])
+  @@index([requestedAt])
+  @@index([escalatedAt])
+  @@map("content_approvals")
+}
+
+enum ApprovalStatus {
+  PENDING // Waiting for approval
+  IN_REVIEW // Being reviewed
+  APPROVED // Approved
+  REJECTED // Rejected
+  CHANGES_REQUESTED // Changes needed
+  ESCALATED // Escalated to higher authority
+  CANCELLED // Request cancelled
+  EXPIRED // Approval expired
+}
+
+enum ApprovalPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ApprovalDecision {
+  APPROVE
+  REJECT
+  REQUEST_CHANGES
+}
+
+// Comments on approval requests
+model ApprovalComment {
+  id         String   @id @default(cuid())
+  approvalId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Comment details
+  userId     String
+  content    String  @db.Text
+  isInternal Boolean @default(false) // Internal note vs public comment
+
+  // Metadata
+  mentions String[] // User IDs mentioned in comment
+  metadata Json?
+
+  // Relationships
+  approval ContentApproval @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+
+  @@index([approvalId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("approval_comments")
+}
+
+// Content safety checks and violations
+model ContentSafetyCheck {
+  id        String   @id @default(cuid())
+  contentId String
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Check details
+  checkType    SafetyCheckType
+  checkVersion String? // Version of safety rules applied
+
+  // Overall result
+  safetyScore Int            @default(100) // 0-100 scale (100 = completely safe)
+  passed      Boolean        @default(true)
+  severity    SafetySeverity @default(INFO)
+
+  // Violation details
+  violations   Json? // Array of {type, category, text, position, severity}
+  flaggedTerms String[] // Specific terms that were flagged
+
+  // AI moderation result (if using OpenAI moderation API)
+  aiModerationResult Json? // Raw API response
+  aiCategories       Json? // {hate, sexual, violence, etc.}
+
+  // Manual review
+  reviewedBy   String? // User ID who reviewed
+  reviewedAt   DateTime?
+  reviewStatus ReviewStatus @default(PENDING)
+  reviewNotes  String?      @db.Text
+
+  // Action taken
+  action   SafetyAction?
+  actionAt DateTime?
+  actionBy String? // User ID who took action
+
+  // False positive handling
+  isFalsePositive     Boolean @default(false)
+  falsePositiveReason String? @db.Text
+
+  // Metadata
+  metadata Json?
+
+  // Relationships
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
+  @@index([projectId])
+  @@index([checkType])
+  @@index([passed])
+  @@index([severity])
+  @@index([reviewStatus])
+  @@index([createdAt])
+  @@map("content_safety_checks")
+}
+
+enum SafetyCheckType {
+  BLACKLIST // Blacklisted terms check
+  PROFANITY // Profanity filter
+  AI_MODERATION // OpenAI moderation API
+  PII // Personal Identifiable Information
+  CREDENTIALS // API keys, passwords, etc.
+  BRAND_SAFETY // Competitor mentions, inappropriate topics
+  COMPLIANCE // GDPR, accessibility, platform policies
+  CUSTOM // Custom safety rules
+}
+
+enum SafetySeverity {
+  INFO // Informational
+  WARNING // Warning level
+  ERROR // Error level
+  CRITICAL // Critical violation
+}
+
+enum ReviewStatus {
+  PENDING // Awaiting review
+  APPROVED // Manually approved despite flags
+  REJECTED // Confirmed violation
+  WHITELIST_ADDED // Term added to whitelist
+}
+
+enum SafetyAction {
+  BLOCK // Block publication
+  WARN // Warn user but allow
+  AUTO_FIX // Automatically fix content
+  FLAG_FOR_REVIEW // Flag for manual review
+  NONE // No action
+}
+
+// Blacklist configuration (global and per-project)
+model BlacklistTerm {
+  id        String   @id @default(cuid())
+  projectId String? // null = global blacklist
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Term details
+  term     String
+  category BlacklistCategory
+  severity SafetySeverity    @default(WARNING)
+
+  // Matching configuration
+  isRegex        Boolean @default(false)
+  caseSensitive  Boolean @default(false)
+  matchWholeWord Boolean @default(false)
+
+  // Action to take
+  action SafetyAction @default(WARN)
+
+  // Reason and context
+  reason  String? @db.Text
+  addedBy String? // User ID
+
+  // Active status
+  isActive Boolean @default(true)
+
+  // Usage tracking
+  hitCount  Int       @default(0)
+  lastHitAt DateTime?
+
+  // Metadata
+  metadata Json?
+
+  @@index([projectId])
+  @@index([category])
+  @@index([severity])
+  @@index([isActive])
+  @@index([term])
+  @@map("blacklist_terms")
+}
+
+enum BlacklistCategory {
+  PROFANITY
+  COMPETITOR
+  SENSITIVE
+  ILLEGAL
+  SPAM
+  CUSTOM
+}
+
+// Whitelist (exceptions to safety rules)
+model WhitelistTerm {
+  id        String   @id @default(cuid())
+  projectId String? // null = global whitelist
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Term details
+  term     String
+  category String?
+
+  // Matching configuration
+  isRegex       Boolean @default(false)
+  caseSensitive Boolean @default(false)
+
+  // Reason
+  reason  String? @db.Text
+  addedBy String? // User ID
+
+  // Active status
+  isActive Boolean @default(true)
+
+  // Metadata
+  metadata Json?
+
+  @@index([projectId])
+  @@index([isActive])
+  @@index([term])
+  @@map("whitelist_terms")
+}
+
+// Content version history
+model ContentVersion {
+  id        String   @id @default(cuid())
+  contentId String
+  projectId String
+  createdAt DateTime @default(now())
+
+  // Version metadata
+  version      Int // Version number (1, 2, 3, etc.)
+  versionLabel String? // Optional label (e.g., "v1.0", "draft", "final")
+
+  // Content snapshot
+  title       String
+  body        String  @db.Text
+  excerpt     String? @db.Text
+  rawContent  String  @db.Text
+  htmlContent String? @db.Text
+
+  // Content metadata snapshot
+  tags       String[]
+  categories String[]
+  coverImage String?
+  metadata   Json? // Other metadata at time of version
+
+  // Version details
+  createdBy    String // User ID who created this version
+  changeType   VersionChangeType
+  changeReason String?           @db.Text // Why this version was created
+
+  // Diff information
+  diffSummary Json? // Summary of changes from previous version
+  wordCount   Int?
+  charCount   Int?
+
+  // Publishing status at time of version
+  publishedAt DateTime?
+  status      ContentStatus?
+
+  // Branching (for A/B testing)
+  branchName      String? // Optional branch name
+  parentVersionId String? // Parent version for branching
+
+  // Relationships
+  content Content @relation("ContentVersionHistory", fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, version])
+  @@index([contentId])
+  @@index([projectId])
+  @@index([version])
+  @@index([createdBy])
+  @@index([createdAt])
+  @@index([branchName])
+  @@map("content_versions")
+}
+
+enum VersionChangeType {
+  CREATED // Initial creation
+  EDITED // Manual edit
+  AI_REGENERATED // AI regeneration
+  APPROVED // After approval
+  REJECTED // After rejection
+  AUTO_SAVED // Auto-save
+  BRANCHED // A/B test branch
+  MERGED // Branch merge
+  ROLLBACK // Rolled back to previous version
+}
+
+// Team members and roles (for approval workflow)
+model TeamMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Role and permissions
+  role        TeamRole @default(EDITOR)
+  permissions Json? // Custom permission overrides
+
+  // Status
+  isActive   Boolean   @default(true)
+  invitedBy  String? // User ID who invited
+  invitedAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  // Metadata
+  metadata Json?
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@index([role])
+  @@index([isActive])
+  @@map("team_members")
+}
+
+enum TeamRole {
+  VIEWER // Can view content
+  EDITOR // Can edit content
+  REVIEWER // Can review and approve
+  ADMIN // Full admin access
+  OWNER // Project owner
+}
+
+// Auto-approval rules configuration
+model AutoApprovalRule {
+  id        String   @id @default(cuid())
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Rule details
+  name        String
+  description String? @db.Text
+
+  // Conditions (all must be met)
+  conditions Json // {safetyScore: {min: 80}, contentType: ["blog"], aiGenerated: true}
+
+  // Priority (higher priority rules evaluated first)
+  priority Int @default(0)
+
+  // Status
+  isActive Boolean @default(true)
+
+  // Usage tracking
+  applicationCount Int       @default(0)
+  lastAppliedAt    DateTime?
+
+  // Metadata
+  metadata Json?
+
+  @@index([projectId])
+  @@index([isActive])
+  @@index([priority])
+  @@map("auto_approval_rules")
+}
+
+// ============================================
+// ERROR TRACKING & MONITORING
+// ============================================
+
+// Error log model for tracking all application errors
+model ErrorLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Error identification
+  sentryEventId String?  @unique // Sentry event ID for correlation
+  errorHash     String // Hash of error for deduplication
+  fingerprint   String[] // Error fingerprint for grouping
+
+  // Error details
+  level      ErrorLevel
+  message    String     @db.Text
+  stackTrace String?    @db.Text
+  errorType  String? // Error class name
+  errorCode  String? // Application-specific error code
+
+  // Context
+  userId      String?
+  projectId   String?
+  environment String  @default("production") // production, staging, development
+  release     String? // Version/release identifier
+
+  // Request context
+  url       String? @db.Text
+  method    String? // HTTP method
+  ipAddress String?
+  userAgent String? @db.Text
+  requestId String? // Unique request identifier
+
+  // Error metadata
+  context     Json? // Additional context data
+  tags        String[] // Tags for categorization
+  breadcrumbs Json? // User actions leading to error
+
+  // Resolution tracking
+  status       ErrorStatus @default(NEW)
+  assignedTo   String? // User ID of assigned developer
+  resolvedAt   DateTime?
+  resolution   String?     @db.Text // Resolution notes
+  relatedIssue String? // Link to GitHub issue or ticket
+
+  // Occurrence tracking
+  occurrences Int      @default(1)
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  // Notification tracking
+  notified   Boolean   @default(false)
+  notifiedAt DateTime?
+
+  @@index([errorHash])
+  @@index([level])
+  @@index([status])
+  @@index([userId])
+  @@index([projectId])
+  @@index([environment])
+  @@index([createdAt])
+  @@index([lastSeenAt])
+  @@index([assignedTo])
+  @@map("error_logs")
+}
+
+enum ErrorLevel {
+  DEBUG
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+  FATAL
+}
+
+enum ErrorStatus {
+  NEW // Just discovered
+  INVESTIGATING // Being investigated
+  IN_PROGRESS // Fix in progress
+  RESOLVED // Fixed and deployed
+  IGNORED // Intentionally ignored
+  WONT_FIX // Decided not to fix
+  DUPLICATE // Duplicate of another error
+}
+
+// Error pattern detection for recurring issues
+model ErrorPattern {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Pattern identification
+  name        String
+  description String? @db.Text
+  errorHash   String  @unique
+  pattern     String  @db.Text // Regex or pattern matcher
+
+  // Occurrence tracking
+  occurrences Int      @default(0)
+  firstSeen   DateTime
+  lastSeen    DateTime
+
+  // Auto-recovery
+  canAutoRecover Boolean @default(false)
+  recoveryCode   String? @db.Text // Code to execute for auto-recovery
+
+  // Alert configuration
+  alertThreshold Int       @default(10) // Alert after N occurrences
+  alertCooldown  Int       @default(3600) // Cooldown in seconds
+  lastAlertAt    DateTime?
+
+  // Status
+  isActive Boolean    @default(true)
+  severity ErrorLevel @default(ERROR)
+
+  @@index([errorHash])
+  @@index([isActive])
+  @@index([lastSeen])
+  @@map("error_patterns")
+}
+
+// ============================================
+// TESTING & DRY RUN SYSTEM
+// ============================================
+
+// Test run tracking for dry run and validation tests
+model TestRun {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Test configuration
+  testType    TestRunType
+  name        String?
+  description String?     @db.Text
+
+  // Test scope
+  contentId   String? // If testing specific content
+  platformIds String[] // Platforms to test against
+
+  // Test execution
+  status      TestRunStatus @default(PENDING)
+  startedAt   DateTime?
+  completedAt DateTime?
+  duration    Int? // Milliseconds
+
+  // Test results
+  passed       Boolean @default(false)
+  totalChecks  Int     @default(0)
+  passedChecks Int     @default(0)
+  failedChecks Int     @default(0)
+  warnings     Int     @default(0)
+
+  // Overall summary
+  summary         String?  @db.Text
+  recommendations String[] // Array of recommended actions
+
+  // Error tracking
+  error        String? @db.Text
+  errorDetails Json?
+
+  // Metadata
+  config   Json? // Test configuration parameters
+  metadata Json?
+
+  // Relationships
+  validationResults ValidationResult[]
+  repositoryDiffs   RepositoryDiff[]
+  mockPublications  MockPublication[]
+  testReports       TestReport[]
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([testType])
+  @@index([status])
+  @@index([contentId])
+  @@index([createdAt])
+  @@index([completedAt])
+  @@map("test_runs")
+}
+
+enum TestRunType {
+  DRY_RUN // Full dry run without publishing
+  VALIDATION_ONLY // Pre-flight validation checks only
+  CONNECTIVITY // Platform connectivity test
+  CONTENT_GENERATION // AI content generation test
+  SCHEDULING // Scheduling simulation
+  FULL_FLOW // Complete flow from generation to publish (simulated)
+}
+
+enum TestRunStatus {
+  PENDING // Queued for execution
+  RUNNING // Currently executing
+  COMPLETED // Completed successfully
+  FAILED // Failed with errors
+  CANCELLED // User cancelled
+}
+
+// Individual validation check results
+model ValidationResult {
+  id        String   @id @default(cuid())
+  testRunId String
+  projectId String
+  createdAt DateTime @default(now())
+
+  // Validation details
+  validationType ValidationType
+  platformId     String? // Platform being validated (if applicable)
+  platformType   PlatformType? // Type of platform
+  contentId      String? // Content being validated (if applicable)
+
+  // Check result
+  passed      Boolean
+  severity    ValidationSeverity
+  checkName   String
+  description String             @db.Text
+
+  // Validation details
+  expected   String? @db.Text // What was expected
+  actual     String? @db.Text // What was found
+  suggestion String? @db.Text // Suggested fix
+
+  // Error details
+  errorCode    String?
+  errorMessage String? @db.Text
+  stackTrace   String? @db.Text
+
+  // Fix information
+  autoFixable Boolean   @default(false)
+  autoFixCode String?   @db.Text // Code to auto-fix
+  fixApplied  Boolean   @default(false)
+  fixedAt     DateTime?
+
+  // Metadata
+  metadata Json?
+
+  // Relationships
+  testRun TestRun @relation(fields: [testRunId], references: [id], onDelete: Cascade)
+
+  @@index([testRunId])
+  @@index([projectId])
+  @@index([validationType])
+  @@index([platformId])
+  @@index([contentId])
+  @@index([passed])
+  @@index([severity])
+  @@index([createdAt])
+  @@map("validation_results")
+}
+
+enum ValidationType {
+  PLATFORM_CONNECTION // Platform API connectivity
+  AUTH_TOKEN // Authentication token validity
+  CONTENT_FORMAT // Content format compliance
+  CHARACTER_LIMITS // Platform character limit checks
+  IMAGE_SIZE // Image size/format validation
+  LINK_VALIDITY // URL/link validation
+  HASHTAG_CHECK // Hashtag appropriateness
+  RATE_LIMIT // Rate limit compliance
+  COST_ESTIMATE // Cost estimation validation
+  SCHEDULING // Schedule configuration validation
+  PROFANITY // Profanity/safety check
+  COMPLIANCE // Platform policy compliance
+}
+
+enum ValidationSeverity {
+  INFO // Informational
+  WARNING // Warning (can proceed)
+  ERROR // Error (should not proceed)
+  CRITICAL // Critical (must fix)
+}
+
+// Repository activity diff tracking
+model RepositoryDiff {
+  id        String   @id @default(cuid())
+  testRunId String?
+  projectId String
+  createdAt DateTime @default(now())
+
+  // Diff period
+  fromDate DateTime
+  toDate   DateTime
+  fromSha  String? // Git SHA at start
+  toSha    String? // Git SHA at end
+
+  // Activity summary
+  activityType RepositoryActivityType[]
+  totalChanges Int                      @default(0)
+
+  // Change details
+  newCommits      Int @default(0)
+  newPullRequests Int @default(0)
+  newIssues       Int @default(0)
+  newReleases     Int @default(0)
+  newContributors Int @default(0)
+
+  // Commit analysis
+  commitStats     Json? // {additions, deletions, files_changed}
+  topContributors Json? // [{login, commits}]
+
+  // Content changes
+  filesAdded    String[]
+  filesModified String[]
+  filesDeleted  String[]
+
+  // PR/Issue analysis
+  prStats    Json? // {opened, merged, closed}
+  issueStats Json? // {opened, closed}
+
+  // Diff visualization data
+  diffData Json? // Structured diff for visualization
+  heatmap  Json? // Activity heatmap data
+
+  // Newsworthy detection
+  newsworthyItems Json? // Array of detected newsworthy events
+  highlights      String[] // Key highlights for content generation
+
+  // Cache
+  expiresAt DateTime?
+
+  // Metadata
+  metadata Json?
+
+  // Relationships
+  testRun TestRun? @relation(fields: [testRunId], references: [id], onDelete: SetNull)
+
+  @@index([testRunId])
+  @@index([projectId])
+  @@index([fromDate, toDate])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("repository_diffs")
+}
+
+enum RepositoryActivityType {
+  COMMITS
+  PULL_REQUESTS
+  ISSUES
+  RELEASES
+  CONTRIBUTORS
+  CODE_CHANGES
+  MILESTONES
+}
+
+// Test report exports
+model TestReport {
+  id        String   @id @default(cuid())
+  testRunId String
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  // Report details
+  reportType   TestReportType
+  reportFormat ReportFormat
+  name         String
+  description  String?        @db.Text
+
+  // Report generation
+  generatedAt    DateTime @default(now())
+  generationTime Int? // Milliseconds
+
+  // Storage
+  fileUrl   String? // URL to generated file
+  filePath  String? // Storage path
+  fileSize  Int? // Bytes
+  expiresAt DateTime? // Auto-delete after expiry
+
+  // Report summary
+  summary     Json? // Report summary data
+  recordCount Int? // Number of records included
+
+  // Status
+  status ReportStatus @default(PENDING)
+  error  String?      @db.Text
+
+  // Delivery
+  deliveredAt    DateTime?
+  deliveryMethod String? // email, download
+  recipients     Json? // Email recipients
+
+  // Metadata
+  metadata Json?
+
+  // Relationships
+  testRun TestRun @relation(fields: [testRunId], references: [id], onDelete: Cascade)
+
+  @@index([testRunId])
+  @@index([projectId])
+  @@index([userId])
+  @@index([reportType])
+  @@index([status])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("test_reports")
+}
+
+enum TestReportType {
+  DRY_RUN_SUMMARY // Dry run summary report
+  VALIDATION_REPORT // Validation results report
+  DIFF_REPORT // Repository diff report
+  COMPREHENSIVE // Comprehensive test report
+  EXECUTIVE // Executive summary
+}
+
+// Mock publication records for dry run
+model MockPublication {
+  id         String   @id @default(cuid())
+  testRunId  String
+  contentId  String
+  platformId String
+  projectId  String
+  createdAt  DateTime @default(now())
+
+  // Simulated publication details
+  platformType PlatformType
+  platformName String
+
+  // What would have been published
+  simulatedTitle   String
+  simulatedBody    String  @db.Text
+  simulatedExcerpt String? @db.Text
+  simulatedImages  Json? // Image URLs that would be used
+
+  // Validation result
+  wouldSucceed  Boolean
+  estimatedTime Int? // Estimated publish time (ms)
+  estimatedCost Float? // Estimated cost (if applicable)
+
+  // Issues found
+  errors   String[] // Array of error messages
+  warnings String[] // Array of warning messages
+
+  // Platform response simulation
+  simulatedResponse Json? // Mock API response
+  simulatedUrl      String? // URL where content would appear
+
+  // Character count analysis
+  titleLength   Int?
+  bodyLength    Int?
+  exceedsLimits Boolean @default(false)
+
+  // Metadata
+  metadata Json?
+
+  // Relationships
+  testRun TestRun @relation(fields: [testRunId], references: [id], onDelete: Cascade)
+
+  @@index([testRunId])
+  @@index([contentId])
+  @@index([platformId])
+  @@index([projectId])
+  @@index([platformType])
+  @@index([wouldSucceed])
+  @@index([createdAt])
+  @@map("mock_publications")
 }
