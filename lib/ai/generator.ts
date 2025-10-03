@@ -374,6 +374,13 @@ export async function generateForAllPlatforms(
     brandVoice?: BrandVoiceSettings;
     provider?: AIProvider;
     projectId?: string;
+    enableTransformation?: boolean;
+    transformationSettings?: {
+      shortenLinks?: boolean;
+      addHashtags?: boolean;
+      hashtags?: string[];
+      tone?: 'professional' | 'casual' | 'technical' | 'friendly';
+    };
   }
 ): Promise<ContentGenerationResult[]> {
   const results: ContentGenerationResult[] = [];
@@ -390,6 +397,89 @@ export async function generateForAllPlatforms(
   }
 
   return results;
+}
+
+/**
+ * Generate content with automatic cross-platform adaptation
+ */
+export async function generateWithAdaptation(
+  activities: GitHubActivity[],
+  basePlatform: Platform,
+  targetPlatforms: Platform[],
+  settings?: {
+    brandVoice?: BrandVoiceSettings;
+    provider?: AIProvider;
+    projectId?: string;
+    transformationSettings?: {
+      shortenLinks?: boolean;
+      addHashtags?: boolean;
+      hashtags?: string[];
+      generateHashtags?: boolean;
+      tone?: 'professional' | 'casual' | 'technical' | 'friendly';
+    };
+  }
+): Promise<{
+  base: ContentGenerationResult;
+  adaptations: Record<Platform, any>;
+}> {
+  // Generate base content
+  const baseResult = await generateContent({
+    activities,
+    platform: basePlatform,
+    brandVoice: settings?.brandVoice,
+    provider: settings?.provider,
+    projectId: settings?.projectId,
+  });
+
+  if (!baseResult.success || !baseResult.content) {
+    return {
+      base: baseResult,
+      adaptations: {},
+    };
+  }
+
+  // Import transformation utilities dynamically to avoid circular dependencies
+  const { transformToMultiplePlatforms } = await import('@/lib/transformation/engine');
+  const { injectHashtags, generateHashtagsFromContent } = await import(
+    '@/lib/utils/hashtag-injector'
+  );
+
+  // Transform base content to target platforms
+  const adaptations = await transformToMultiplePlatforms(
+    baseResult.content,
+    basePlatform as any,
+    targetPlatforms as any[],
+    {
+      tone: settings?.transformationSettings?.tone,
+      aiProvider: settings?.provider,
+    }
+  );
+
+  // Post-process adaptations with hashtags if enabled
+  if (settings?.transformationSettings?.addHashtags) {
+    for (const [platform, result] of Object.entries(adaptations)) {
+      let hashtags = settings.transformationSettings.hashtags || [];
+
+      // Generate hashtags if enabled
+      if (settings.transformationSettings.generateHashtags) {
+        const generated = generateHashtagsFromContent(result.content, 3);
+        hashtags = [...hashtags, ...generated];
+      }
+
+      if (hashtags.length > 0) {
+        const hashtagResult = injectHashtags(result.content, hashtags, {
+          platform: platform as any,
+          placement: 'smart',
+        });
+        result.content = hashtagResult.content;
+      }
+    }
+  }
+
+  return {
+    base: baseResult,
+    adaptations,
+  };
 }
 
 /**

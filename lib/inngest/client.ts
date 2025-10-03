@@ -32,6 +32,38 @@ type Events = {
       triggeredBy: "scheduled" | "manual";
     };
   };
+  "scheduled/publish.project": {
+    data: {
+      projectId: string;
+    };
+  };
+  "scheduled/publish.item": {
+    data: {
+      scheduleId: string;
+      contentId: string;
+      projectId: string;
+    };
+  };
+  "scheduled/publish.manual": {
+    data: {
+      scheduleId: string;
+      userId: string;
+    };
+  };
+  "scheduled/publish.cancel": {
+    data: {
+      scheduleId: string;
+      userId: string;
+      reason?: string;
+    };
+  };
+  "scheduled/publish.reschedule": {
+    data: {
+      scheduleId: string;
+      newScheduleTime: string;
+      userId: string;
+    };
+  };
 };
 
 /**

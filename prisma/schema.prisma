@@ -249,6 +249,8 @@ model Content {
   // Relationships
   project      Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
   publications ContentPublication[]
+  contentImages ContentImage[]
+  scheduledContent ScheduledContent[]
 
   @@index([projectId])
   @@index([status])
@@ -571,6 +573,7 @@ model EmailCampaign {
   // Relationships
   project    Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   recipients EmailRecipient[]
+  emailImages EmailImage[]
 
   @@index([projectId])
   @@index([status])
@@ -890,4 +893,364 @@ model ContentTemplateHistory {
   @@index([platform])
   @@index([createdAt])
   @@map("content_template_history")
+}
+
+// ============================================
+// IMAGE MANAGEMENT
+// ============================================
+
+model Image {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Image metadata
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int // File size in bytes
+  width        Int
+  height       Int
+  aspectRatio  Float
+
+  // Storage
+  storageUrl    String // URL to stored image (Vercel Blob/R2)
+  storagePath   String // Storage path/key
+  storageProvider String @default("vercel-blob") // vercel-blob, cloudflare-r2, s3
+
+  // Image data
+  alt           String? @db.Text
+  caption       String? @db.Text
+  title         String?
+  description   String? @db.Text
+
+  // Categorization
+  tags       String[]
+  categories String[]
+
+  // Generation metadata
+  isAIGenerated  Boolean  @default(false)
+  aiModel        String? // dall-e-3, stable-diffusion
+  aiPrompt       String?  @db.Text
+  aiRevisedPrompt String? @db.Text // DALL-E revised prompt
+  aiQuality      String? // standard, hd
+  aiStyle        String? // vivid, natural
+  generatedAt    DateTime?
+
+  // Platform-specific versions
+  platformVersions Json? // Store different sizes/formats per platform
+
+  // Usage tracking
+  usageCount    Int      @default(0)
+  lastUsedAt    DateTime?
+
+  // Optimization
+  isOptimized   Boolean @default(false)
+  originalSize  Int? // Original file size before optimization
+  optimizedAt   DateTime?
+
+  // Relations
+  contentImages ContentImage[]
+  emailImages   EmailImage[]
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([isAIGenerated])
+  @@index([createdAt])
+  @@index([tags])
+  @@map("images")
+}
+
+// Junction table for Content-Image relationship
+model ContentImage {
+  id        String   @id @default(cuid())
+  contentId String
+  imageId   String
+  createdAt DateTime @default(now())
+
+  // Image role in content
+  role ImageRole @default(INLINE)
+
+  // Platform-specific metadata
+  platformType PlatformType?
+  platformUrl  String? // Platform-specific image URL after upload
+
+  // Position and settings
+  position Int? // Order in content
+  settings Json? // Platform-specific image settings
+
+  // Relations
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  image   Image   @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, imageId, role])
+  @@index([contentId])
+  @@index([imageId])
+  @@index([platformType])
+  @@map("content_images")
+}
+
+enum ImageRole {
+  FEATURED // Featured/cover image
+  HERO // Hero image
+  INLINE // Inline content image
+  THUMBNAIL // Thumbnail
+  OG_IMAGE // Open Graph image
+  TWITTER_CARD // Twitter card image
+  EMAIL_HEADER // Email header image
+  BANNER // Banner image
+}
+
+// Junction table for EmailCampaign-Image relationship
+model EmailImage {
+  id         String   @id @default(cuid())
+  campaignId String
+  imageId    String
+  createdAt  DateTime @default(now())
+
+  // Image role in email
+  role ImageRole @default(EMAIL_HEADER)
+
+  // Position and settings
+  position Int?
+  settings Json?
+
+  // Relations
+  campaign EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  image    Image         @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, imageId, role])
+  @@index([campaignId])
+  @@index([imageId])
+  @@map("email_images")
+}
+
+// Image generation jobs (for tracking batch generation)
+model ImageGenerationJob {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Job details
+  name        String?
+  description String? @db.Text
+
+  // Generation parameters
+  prompts      String[] // Array of prompts to generate
+  model        String   @default("dall-e-3")
+  quality      String   @default("standard") // standard, hd
+  style        String   @default("vivid") // vivid, natural
+  size         String   @default("1024x1024") // 1024x1024, 1792x1024, 1024x1792
+
+  // Job status
+  status         ImageJobStatus @default(PENDING)
+  totalImages    Int            @default(0)
+  generatedCount Int            @default(0)
+  failedCount    Int            @default(0)
+
+  // Cost tracking
+  totalCost Float @default(0)
+
+  // Completion tracking
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  // Error handling
+  errors Json? // Array of error objects
+
+  // Results
+  imageIds String[] // Array of generated image IDs
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("image_generation_jobs")
+}
+
+enum ImageJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// ============================================
+// SCHEDULING & QUEUE SYSTEM
+// ============================================
+
+// Scheduled content for future publishing
+model ScheduledContent {
+  id        String   @id @default(cuid())
+  contentId String
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Schedule configuration
+  scheduledFor DateTime // When to publish (UTC)
+  timezone     String   @default("UTC") // IANA timezone for display
+  localTime    String? // Human-readable local time (e.g., "2025-01-15 09:00 AM PST")
+
+  // Recurring schedule (optional)
+  isRecurring      Boolean  @default(false)
+  recurringPattern String? // cron-like pattern or "daily|weekly|monthly"
+  recurringConfig  Json? // Additional recurrence config (days of week, etc.)
+  recurringUntil   DateTime? // End date for recurring schedule
+  lastOccurrence   DateTime? // Track last execution for recurring jobs
+
+  // Publishing configuration
+  platforms    String[] // Platform IDs to publish to
+  publishDelay Int?     @default(0) // Additional delay in minutes after scheduled time
+
+  // Queue information
+  queueStatus  QueueStatus @default(PENDING)
+  queuedAt     DateTime? // When added to queue
+  processingAt DateTime? // When started processing
+  publishedAt  DateTime? // When actually published
+  failedAt     DateTime? // When failed
+
+  // Priority and retry
+  priority   Int     @default(5) // 1-10, higher = more priority
+  retryCount Int     @default(0)
+  maxRetries Int     @default(3)
+  retryDelay Int     @default(300) // Seconds between retries
+
+  // Status and error tracking
+  status       ScheduleStatus @default(SCHEDULED)
+  error        String?        @db.Text
+  errorDetails Json? // Detailed error information
+
+  // Conflict detection
+  conflictsWith String[] // IDs of conflicting schedules
+  conflictNote  String?  @db.Text
+
+  // Inngest job tracking
+  inngestJobId  String? // Inngest scheduled function run ID
+  inngestEventId String? // Inngest event ID
+
+  // Metadata
+  metadata Json? // Additional scheduling metadata
+  notes    String? @db.Text // User notes about this schedule
+
+  // Relationships
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
+  @@index([projectId])
+  @@index([scheduledFor])
+  @@index([queueStatus])
+  @@index([status])
+  @@index([priority])
+  @@index([timezone])
+  @@index([isRecurring])
+  @@map("scheduled_content")
+}
+
+enum QueueStatus {
+  PENDING // Waiting in queue
+  QUEUED // Ready for processing
+  PROCESSING // Currently being processed
+  COMPLETED // Successfully completed
+  FAILED // Failed after all retries
+  CANCELLED // Manually cancelled
+  PAUSED // Temporarily paused
+}
+
+enum ScheduleStatus {
+  SCHEDULED // Waiting for scheduled time
+  ACTIVE // Currently being executed
+  PUBLISHED // Successfully published
+  FAILED // Failed to publish
+  CANCELLED // User cancelled
+  EXPIRED // Passed scheduled time without execution
+  SKIPPED // Skipped due to conflict or other reason
+}
+
+// Queue tracking and analytics
+model QueueMetrics {
+  id        String   @id @default(cuid())
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Time period
+  periodStart DateTime
+  periodEnd   DateTime
+
+  // Throughput metrics
+  totalQueued     Int @default(0)
+  totalProcessed  Int @default(0)
+  totalCompleted  Int @default(0)
+  totalFailed     Int @default(0)
+  totalCancelled  Int @default(0)
+
+  // Performance metrics
+  avgWaitTime       Int? // Average time in queue (seconds)
+  avgProcessingTime Int? // Average processing time (seconds)
+  peakQueueLength   Int  @default(0)
+
+  // Success rate
+  successRate Float? // Percentage of successful completions
+
+  // Platform breakdown
+  platformStats Json? // Stats per platform
+
+  @@index([projectId])
+  @@index([periodStart])
+  @@index([periodEnd])
+  @@map("queue_metrics")
+}
+
+// Schedule conflicts tracking
+model ScheduleConflict {
+  id        String   @id @default(cuid())
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Conflicting schedules
+  schedule1Id String
+  schedule2Id String
+
+  // Conflict details
+  conflictType   ConflictType
+  conflictTime   DateTime // When the conflict occurs
+  conflictReason String       @db.Text
+
+  // Resolution
+  resolved      Boolean   @default(false)
+  resolvedAt    DateTime?
+  resolution    String?   @db.Text // How it was resolved
+  resolvedBy    String? // User ID who resolved it
+
+  // Severity
+  severity ConflictSeverity @default(WARNING)
+
+  @@index([projectId])
+  @@index([schedule1Id])
+  @@index([schedule2Id])
+  @@index([conflictTime])
+  @@index([resolved])
+  @@map("schedule_conflicts")
+}
+
+enum ConflictType {
+  SAME_TIME // Both scheduled for exact same time
+  OVERLAPPING // Time ranges overlap
+  RATE_LIMIT // Would exceed platform rate limits
+  RESOURCE // Would exceed resource limits
+  CUSTOM // Custom conflict rule
+}
+
+enum ConflictSeverity {
+  INFO // Just for information
+  WARNING // Potential issue, can proceed
+  ERROR // Must be resolved before proceeding
+  CRITICAL // Blocking issue
 }
