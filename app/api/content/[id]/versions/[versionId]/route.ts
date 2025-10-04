@@ -20,7 +20,7 @@ export async function PUT(
     const { id, versionId } = await context.params;
 
     // Check content access
-    const content = await prisma.generatedContent.findUnique({
+    const content = await prisma.content.findUnique({
       where: { id },
       include: {
         project: {
@@ -67,7 +67,7 @@ export async function DELETE(
     const { id, versionId } = await context.params;
 
     // Check content access
-    const content = await prisma.generatedContent.findUnique({
+    const content = await prisma.content.findUnique({
       where: { id },
       include: {
         project: {

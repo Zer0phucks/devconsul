@@ -29,7 +29,7 @@ export async function POST(
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid request', details: validation.error.errors },
+        { error: 'Invalid request', details: validation.error.issues },
         { status: 400 }
       );
     }
@@ -37,7 +37,7 @@ export async function POST(
     const { content } = validation.data;
 
     // Check content access
-    const existingContent = await prisma.generatedContent.findUnique({
+    const existingContent = await prisma.content.findUnique({
       where: { id },
       include: {
         project: {
@@ -54,13 +54,13 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Save draft (update content with draft flag in metadata)
-    await prisma.generatedContent.update({
+    // Save draft (update content with draft flag in aiMetadata)
+    await prisma.content.update({
       where: { id },
       data: {
-        content,
-        metadata: {
-          ...(existingContent.metadata as object),
+        rawContent: content,
+        aiMetadata: {
+          ...(existingContent.aiMetadata as object),
           isDraft: true,
           lastDraftSave: new Date().toISOString(),
         },
@@ -91,7 +91,7 @@ export async function GET(
     const { id } = await context.params;
 
     // Fetch draft
-    const content = await prisma.generatedContent.findUnique({
+    const content = await prisma.content.findUnique({
       where: { id },
       include: {
         project: {
@@ -108,11 +108,11 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const metadata = content.metadata as any;
+    const metadata = content.aiMetadata as any;
     const isDraft = metadata?.isDraft || false;
 
     return NextResponse.json({
-      draft: isDraft ? content.content : null,
+      draft: isDraft ? content.rawContent : null,
       lastSaved: metadata?.lastDraftSave || null,
     });
   } catch (error) {

@@ -102,16 +102,17 @@ emails/          # React Email templates
 ### Critical System Components
 
 **Middleware (`middleware.ts`):**
-- Session management with NextAuth
-- Rate limiting
+- Session management with Supabase Auth
+- Protected route enforcement
 - Request validation
 - Must maintain auth checks for `/admin` and `/dashboard` routes
 
-**Authentication (`lib/auth.ts`):**
-- NextAuth v5 with Prisma adapter
-- OAuth providers: Google, GitHub
-- Credentials provider for email/password
-- Session strategy: database-backed
+**Authentication (`lib/auth.ts`, `lib/auth-helpers.ts`):**
+- Supabase Auth with SSR (@supabase/ssr)
+- OAuth providers: Google, GitHub (configured in Supabase dashboard)
+- Email/password authentication
+- Server and client-side auth helpers
+- Session-based authentication with cookies
 
 **Content Safety System:**
 - Pre-publish validation pipeline
@@ -131,7 +132,8 @@ emails/          # React Email templates
 
 **Environment Variables (`.env`):**
 - Database: `DATABASE_URL`
-- Auth: `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, OAuth credentials
+- Auth: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- OAuth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
 - AI: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `AI_PROVIDER`
 - Email: `RESEND_API_KEY`, `SENDGRID_API_KEY`, `MAILCHIMP_API_KEY`
 - See `.env.example` for complete list
@@ -186,7 +188,7 @@ npm run db:generate
 - **Next.js 15:** App Router only, no Pages directory
 - **Database:** PostgreSQL only, schema uses advanced Prisma features
 - **Inngest:** All background jobs must go through Inngest, no direct async operations
-- **NextAuth v5:** Beta version - authentication patterns differ from v4
+- **Supabase Auth:** Uses @supabase/ssr for server-side rendering, cookie-based sessions
 - **Content Safety:** All AI-generated content MUST pass safety checks before publishing
 
 ## Testing Strategy
@@ -226,8 +228,9 @@ npm run db:generate
 1. **Prisma Client Generation:** Must run `db:generate` after schema changes
 2. **Environment Variables:** Inngest requires `INNGEST_EVENT_KEY` in production
 3. **Turbopack Mode:** Some packages may have compatibility issues with Turbopack
-4. **Session Storage:** NextAuth sessions stored in database, not JWT
+4. **Session Storage:** Supabase Auth sessions stored in cookies, managed by middleware
 5. **Content Status:** Draft → Scheduled → Published flow enforced via state machine
 6. **Timezone Handling:** Always use IANA timezone strings, stored in UTC
 7. **Image Storage:** Vercel Blob URLs expire, must track in `Image` model
 8. **Platform Rate Limits:** Implemented per-platform in adapter layer
+9. **OAuth Configuration:** Google and GitHub OAuth must be configured with Supabase callback URL: `https://bkrbsjalxuxvtvaxyqrf.supabase.co/auth/v1/callback` - See `docs/oauth-setup.md` for complete setup guide

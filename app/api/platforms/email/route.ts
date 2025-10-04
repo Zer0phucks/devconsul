@@ -113,7 +113,7 @@ async function handleSendEmail(data: any, platformId: string) {
   const validation = sendEmailSchema.safeParse(data);
   if (!validation.success) {
     return NextResponse.json(
-      { error: 'Validation failed', details: validation.error.errors },
+      { error: 'Validation failed', details: validation.error.issues },
       { status: 400 }
     );
   }
@@ -172,7 +172,7 @@ async function handleCreateCampaign(data: any, projectId: string) {
   const validation = createCampaignSchema.safeParse(data);
   if (!validation.success) {
     return NextResponse.json(
-      { error: 'Validation failed', details: validation.error.errors },
+      { error: 'Validation failed', details: validation.error.issues },
       { status: 400 }
     );
   }

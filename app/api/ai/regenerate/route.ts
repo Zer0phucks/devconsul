@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { generateContent } from '@/lib/ai/generator';
+import { generateContent, type Platform } from '@/lib/ai/generator';
 import { regenerateContentSchema } from '@/lib/validations/ai';
 import { db } from '@/lib/db';
 
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: 'Invalid request data',
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
         { status: 400 }
       );
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     // Extract metadata
     const metadata = existingContent.aiMetadata as Record<string, unknown> | null;
-    const platform = (metadata?.platform as string) || 'blog';
+    const platform = ((metadata?.platform as string) || 'blog') as Platform;
 
     // Build custom prompt for regeneration
     let customPrompt = refinementPrompt;

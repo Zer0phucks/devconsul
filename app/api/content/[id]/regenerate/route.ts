@@ -8,6 +8,7 @@ import { getSession } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
 import { regenerateSchema } from '@/lib/validations/content-editor';
 import { generateContent } from '@/lib/ai/generate-content';
+import type { Platform } from '@/lib/ai/generator';
 
 export async function POST(
   request: NextRequest,
@@ -30,7 +31,7 @@ export async function POST(
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid request', details: validation.error.errors },
+        { error: 'Invalid request', details: validation.error.issues },
         { status: 400 }
       );
     }
@@ -44,7 +45,7 @@ export async function POST(
     } = validation.data;
 
     // Fetch original content
-    const originalContent = await prisma.generatedContent.findUnique({
+    const originalContent = await prisma.content.findUnique({
       where: { id },
       include: {
         project: {
@@ -65,7 +66,7 @@ export async function POST(
     }
 
     // Build regeneration prompt
-    let prompt = `Regenerate the following content:\n\n${originalContent.content}`;
+    let prompt = `Regenerate the following content:\n\n${originalContent.rawContent}`;
     if (refinementPrompt) {
       prompt += `\n\nAdditional instructions: ${refinementPrompt}`;
     }
@@ -75,9 +76,11 @@ export async function POST(
     const count = generateVariations ? variationCount : 1;
 
     for (let i = 0; i < count; i++) {
+      const metadata = originalContent.aiMetadata as any;
+      const platform = (metadata?.platform as string) || 'blog';
       const result = await generateContent(
         prompt,
-        originalContent.platform || 'blog',
+        platform as Platform,
         aiModel
       );
       variations.push(result.content);
@@ -87,12 +90,12 @@ export async function POST(
     if (keepPrevious && variations.length > 0) {
       // Store as new version (implementation depends on your version schema)
       // For now, we'll just update the main content
-      await prisma.generatedContent.update({
+      await prisma.content.update({
         where: { id },
         data: {
-          content: variations[0],
-          metadata: {
-            ...(originalContent.metadata as object),
+          rawContent: variations[0],
+          aiMetadata: {
+            ...(originalContent.aiMetadata as object),
             aiModel,
             refinementPrompt,
             regeneratedAt: new Date().toISOString(),
@@ -102,12 +105,12 @@ export async function POST(
       });
     } else if (variations.length > 0) {
       // Replace content
-      await prisma.generatedContent.update({
+      await prisma.content.update({
         where: { id },
         data: {
-          content: variations[0],
-          metadata: {
-            ...(originalContent.metadata as object),
+          rawContent: variations[0],
+          aiMetadata: {
+            ...(originalContent.aiMetadata as object),
             aiModel,
             refinementPrompt,
           },
