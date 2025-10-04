@@ -2,21 +2,17 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import Link from 'next/link';
-import { getBlogPost, getBlogPosts } from '@/lib/blog/posts';
+import { getBlogPost } from '@/lib/blog/posts';
 import { formatDate } from '@/lib/utils';
 import { mdxComponents } from '@/components/blog/mdx-components';
+
+// Force dynamic rendering since we need database access
+export const dynamic = 'force-dynamic';
 
 interface BlogPostPageProps {
   params: {
     slug: string;
   };
-}
-
-export async function generateStaticParams() {
-  const posts = await getBlogPosts();
-  return posts.map((post) => ({
-    slug: post.slug,
-  }));
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {

@@ -4,15 +4,30 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 
 // KV-like interface using Supabase
 class SupabaseKV {
+  /**
+   * Get appropriate Supabase client based on context
+   * Uses service client during build, regular client during request
+   */
+  private async getClient() {
+    try {
+      // Try to use request-scoped client first
+      return await createClient();
+    } catch (error) {
+      // Fallback to service client for build-time operations
+      return createServiceClient();
+    }
+  }
+
   /**
    * Set a key-value pair with optional expiration
    */
   async set(key: string, value: any, options?: { ex?: number; px?: number }): Promise<string> {
     try {
-      const supabase = await createClient();
+      const supabase = await this.getClient();
       const expiresAt = options?.ex
         ? new Date(Date.now() + options.ex * 1000)
         : options?.px
@@ -41,7 +56,7 @@ class SupabaseKV {
    */
   async get<T = any>(key: string): Promise<T | null> {
     try {
-      const supabase = await createClient();
+      const supabase = await this.getClient();
       const { data, error } = await supabase
         .from('kv_store')
         .select('value, expires_at')
@@ -69,7 +84,7 @@ class SupabaseKV {
    */
   async del(...keys: string[]): Promise<number> {
     try {
-      const supabase = await createClient();
+      const supabase = await this.getClient();
       const { error, count } = await supabase
         .from('kv_store')
         .delete()
@@ -88,7 +103,7 @@ class SupabaseKV {
    */
   async exists(...keys: string[]): Promise<number> {
     try {
-      const supabase = await createClient();
+      const supabase = await this.getClient();
       const { count, error } = await supabase
         .from('kv_store')
         .select('key', { count: 'exact', head: true })
@@ -107,7 +122,7 @@ class SupabaseKV {
    */
   async keys(pattern: string): Promise<string[]> {
     try {
-      const supabase = await createClient();
+      const supabase = await this.getClient();
 
       // Convert Redis-style pattern to SQL LIKE pattern
       // * becomes %
@@ -224,7 +239,7 @@ class SupabaseKV {
    */
   async expireat(key: string, timestamp: number): Promise<boolean> {
     try {
-      const supabase = await createClient();
+      const supabase = await this.getClient();
       const { error } = await supabase
         .from('kv_store')
         .update({ expires_at: new Date(timestamp * 1000) })
