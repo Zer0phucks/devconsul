@@ -7,7 +7,6 @@ import {
   generateNewsletter,
   analyzeAndGenerateContent,
 } from '@/lib/ai/content-generator';
-import type { GitHubActivity, GeneratedContent } from '@/lib/types';
 import {
   mockPushActivity,
   mockPullRequestActivity,
@@ -110,7 +109,8 @@ describe('Content Generator', () => {
         })
       );
 
-      const systemMessage = (mockGenerateText.mock.calls[0][0] as any).messages[0].content;
+      const callArg = mockGenerateText.mock.calls[0][0] as { messages: Array<{ content: string }> };
+      const systemMessage = callArg.messages[0].content;
       expect(systemMessage).toContain('casual');
     });
 
@@ -126,7 +126,8 @@ describe('Content Generator', () => {
 
       await generateBlogPost([mockPushActivity]);
 
-      const userMessage = (mockGenerateText.mock.calls[0][0] as any).messages[1].content;
+      const callArg = mockGenerateText.mock.calls[0][0] as { messages: Array<{ content: string }> };
+      const userMessage = callArg.messages[1].content;
       expect(userMessage).toContain('COMMITS:');
       expect(userMessage).toContain('feat: Add new authentication feature');
       expect(userMessage).toContain('fix: Resolve login bug');
@@ -144,7 +145,8 @@ describe('Content Generator', () => {
 
       await generateBlogPost([mockPullRequestActivity]);
 
-      const userMessage = (mockGenerateText.mock.calls[0][0] as any).messages[1].content;
+      const callArg = mockGenerateText.mock.calls[0][0] as { messages: Array<{ content: string }> };
+      const userMessage = callArg.messages[1].content;
       expect(userMessage).toContain('PULL REQUESTS:');
       expect(userMessage).toContain('PR #42: Add OAuth integration');
     });
@@ -161,7 +163,8 @@ describe('Content Generator', () => {
 
       await generateBlogPost([mockReleaseActivity]);
 
-      const userMessage = (mockGenerateText.mock.calls[0][0] as any).messages[1].content;
+      const callArg = mockGenerateText.mock.calls[0][0] as { messages: Array<{ content: string }> };
+      const userMessage = callArg.messages[1].content;
       expect(userMessage).toContain('RELEASES:');
       expect(userMessage).toContain('v1.2.0');
       expect(userMessage).toContain('Major update with new features');
@@ -223,7 +226,8 @@ This is line 2 of content`,
 
       await generateBlogPost(mockActivitiesBatch, { includeCodeSnippets: true });
 
-      const systemMessage = (mockGenerateText.mock.calls[0][0] as any).messages[0].content;
+      const callArg = mockGenerateText.mock.calls[0][0] as { messages: Array<{ content: string }> };
+      const systemMessage = callArg.messages[0].content;
       expect(systemMessage).toContain('Include relevant code snippets');
     });
 
@@ -239,7 +243,8 @@ This is line 2 of content`,
 
       await generateBlogPost(mockActivitiesBatch, { includeCodeSnippets: false });
 
-      const systemMessage = (mockGenerateText.mock.calls[0][0] as any).messages[0].content;
+      const callArg = mockGenerateText.mock.calls[0][0] as { messages: Array<{ content: string }> };
+      const systemMessage = callArg.messages[0].content;
       expect(systemMessage).toContain('Focus on narrative without code snippets');
     });
 
@@ -255,7 +260,8 @@ This is line 2 of content`,
 
       await generateBlogPost(mockActivitiesBatch, { targetAudience: 'managers' });
 
-      const systemMessage = (mockGenerateText.mock.calls[0][0] as any).messages[0].content;
+      const callArg = mockGenerateText.mock.calls[0][0] as { messages: Array<{ content: string }> };
+      const systemMessage = callArg.messages[0].content;
       expect(systemMessage).toContain('managers');
     });
   });
@@ -284,7 +290,8 @@ This is line 2 of content`,
       });
 
       // Verify it uses casual style
-      const systemMessage = (mockGenerateText.mock.calls[0][0] as any).messages[0].content;
+      const callArg = mockGenerateText.mock.calls[0][0] as { messages: Array<{ content: string }> };
+      const systemMessage = callArg.messages[0].content;
       expect(systemMessage).toContain('engaging');
       expect(systemMessage).toContain('informative');
     });
@@ -320,7 +327,8 @@ This is line 2 of content`,
 
       await generateNewsletter(mockActivitiesBatch);
 
-      const userMessage = (mockGenerateText.mock.calls[0][0] as any).messages[1].content;
+      const callArg = mockGenerateText.mock.calls[0][0] as { messages: Array<{ content: string }> };
+      const userMessage = callArg.messages[1].content;
       expect(userMessage).toContain('Highlights');
       expect(userMessage).toContain('Details');
       expect(userMessage).toContain('What\'s Next');

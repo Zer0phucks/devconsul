@@ -8,6 +8,7 @@ import {
   type ActivityFilter,
 } from '@/lib/github/activity';
 import { PrismaClient } from '@prisma/client';
+import { getAuthUser } from '@/lib/auth-helpers';
 
 const prisma = new PrismaClient();
 
@@ -27,15 +28,17 @@ const prisma = new PrismaClient();
  */
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Replace with proper NextAuth session when auth is implemented
-    const userId = request.headers.get('x-user-id') || request.nextUrl.searchParams.get('userId');
+    // Verify authentication using Supabase
+    const user = await getAuthUser(request);
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json(
         { error: 'User authentication required' },
         { status: 401 }
       );
     }
+
+    const userId = user.id;
 
     // Parse required params
     const searchParams = request.nextUrl.searchParams;

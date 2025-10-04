@@ -17,7 +17,7 @@ import { validatePromptQuality } from '@/lib/validations/prompt';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -33,9 +33,10 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const { id } = await context.params;
     // Fetch prompt with relationships
     const prompt = await db.promptLibrary.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         template: {
           select: {
@@ -101,7 +102,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -117,9 +118,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const { id } = await context.params;
     // Fetch existing prompt
     const existingPrompt = await db.promptLibrary.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingPrompt) {
@@ -159,7 +161,7 @@ export async function PATCH(
 
     // Update prompt
     const updatedPrompt = await db.promptLibrary.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(validated.name && { name: validated.name }),
         ...(validated.description !== undefined && { description: validated.description }),
@@ -215,7 +217,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -231,9 +233,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const { id } = await context.params;
     // Fetch existing prompt
     const existingPrompt = await db.promptLibrary.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingPrompt) {
@@ -258,7 +261,7 @@ export async function DELETE(
 
     // Delete prompt
     await db.promptLibrary.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true, message: 'Prompt deleted successfully' });

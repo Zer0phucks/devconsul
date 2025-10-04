@@ -22,7 +22,7 @@ const trackUsageSchema = z.object({
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -38,13 +38,14 @@ export async function POST(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const { id } = await context.params;
     // Parse and validate request
     const body = await request.json();
     const validated = trackUsageSchema.parse(body);
 
     // Fetch existing prompt
     const existingPrompt = await db.promptLibrary.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingPrompt) {
@@ -87,7 +88,7 @@ export async function POST(
 
     // Update prompt with new statistics
     const updatedPrompt = await db.promptLibrary.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       select: {
         id: true,

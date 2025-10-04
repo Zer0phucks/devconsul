@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createGitHubClient } from '@/lib/github/client';
 import { PrismaClient } from '@prisma/client';
+import { getAuthUser } from '@/lib/auth-helpers';
 
 const prisma = new PrismaClient();
 
@@ -16,16 +17,17 @@ const prisma = new PrismaClient();
  */
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Replace with proper NextAuth session when auth is implemented
-    // For now, accept userId from header or query param
-    const userId = request.headers.get('x-user-id') || request.nextUrl.searchParams.get('userId');
+    // Verify authentication using Supabase
+    const user = await getAuthUser(request);
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json(
         { error: 'User authentication required' },
         { status: 401 }
       );
     }
+
+    const userId = user.id;
 
     // Get GitHub access token from database
     const account = await prisma.account.findFirst({

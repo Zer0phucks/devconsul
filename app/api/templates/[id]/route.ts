@@ -18,7 +18,7 @@ import { extractVariableNames } from '@/lib/templates/engine';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -34,9 +34,10 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const { id } = await context.params;
     // Fetch template
     const template = await db.template.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         promptLibrary: {
           select: {
@@ -96,7 +97,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -112,9 +113,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const { id } = await context.params;
     // Get existing template
     const existing = await db.template.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existing) {
@@ -128,7 +130,7 @@ export async function PATCH(
 
     // Parse and validate request body
     const body = await request.json();
-    const validated = updateTemplateSchema.parse({ ...body, id: params.id });
+    const validated = updateTemplateSchema.parse({ ...body, id });
 
     // Validate content if provided
     let contentValidation;
@@ -152,7 +154,7 @@ export async function PATCH(
 
     // Update template
     const updated = await db.template.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name: validated.name,
         description: validated.description,
@@ -194,7 +196,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -210,9 +212,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const { id } = await context.params;
     // Get existing template
     const existing = await db.template.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existing) {
@@ -233,7 +236,7 @@ export async function DELETE(
 
     // Delete template
     await db.template.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });

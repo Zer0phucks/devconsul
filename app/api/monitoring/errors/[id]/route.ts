@@ -19,7 +19,7 @@ import { ErrorStatus } from '@prisma/client';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -31,12 +31,13 @@ export async function GET(
       throw new AuthorizationError('Admin access required');
     }
 
+    const { id } = await context.params;
     const error = await prisma.errorLog.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!error) {
-      throw createNotFoundError('Error log', params.id);
+      throw createNotFoundError('Error log', id);
     }
 
     return NextResponse.json({ error });
@@ -53,7 +54,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -65,6 +66,7 @@ export async function PATCH(
       throw new AuthorizationError('Admin access required');
     }
 
+    const { id } = await context.params;
     const body = await request.json();
     const { status, assignedTo, resolution, relatedIssue } = body;
 
@@ -75,11 +77,11 @@ export async function PATCH(
 
     // Get current error for audit trail
     const currentError = await prisma.errorLog.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!currentError) {
-      throw createNotFoundError('Error log', params.id);
+      throw createNotFoundError('Error log', id);
     }
 
     // Build update data
@@ -100,7 +102,7 @@ export async function PATCH(
 
     // Update error log
     const updatedError = await prisma.errorLog.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
     });
 
@@ -110,7 +112,7 @@ export async function PATCH(
       userEmail: session.user.email || undefined,
       action: 'update',
       resource: 'ERROR_LOG' as any,
-      resourceId: params.id,
+      resourceId: id,
       oldValues: {
         status: currentError.status,
         assignedTo: currentError.assignedTo,
@@ -134,7 +136,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -146,18 +148,19 @@ export async function DELETE(
       throw new AuthorizationError('Admin access required');
     }
 
+    const { id } = await context.params;
     // Get error before deletion for audit
     const error = await prisma.errorLog.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!error) {
-      throw createNotFoundError('Error log', params.id);
+      throw createNotFoundError('Error log', id);
     }
 
     // Delete error log
     await prisma.errorLog.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     // Create audit log
@@ -166,7 +169,7 @@ export async function DELETE(
       userEmail: session.user.email || undefined,
       action: 'delete',
       resource: 'ERROR_LOG' as any,
-      resourceId: params.id,
+      resourceId: id,
       oldValues: {
         errorHash: error.errorHash,
         message: error.message,

@@ -5,6 +5,7 @@
 - Create tests before starting work and keep track of them in a structured format (e.g., tests.json).
 - It is unacceptable to remove or edit tests because this could lead to missing or buggy functionality.
 - create setup scripts (e.g., init.sh) to gracefully start servers, run test suites, and linters.
+- Use specialized subagents for both parallel and sequential execution, helps to manage context, allowing you to maintain focus on the larger picture while subagents can focus on individual tasks.
 
 ## Project Overview
 

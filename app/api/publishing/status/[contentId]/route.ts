@@ -10,7 +10,7 @@ import { getPublicationStatus } from '@/lib/publishing';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { contentId: string } }
+  context: { params: Promise<{ contentId: string }> }
 ) {
   try {
     const session = await getSession();
@@ -18,7 +18,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const status = await getPublicationStatus(params.contentId);
+    const { contentId } = await context.params;
+    const status = await getPublicationStatus(contentId);
 
     return NextResponse.json(status);
   } catch (error) {

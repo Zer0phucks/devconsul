@@ -19,8 +19,45 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = publishToSinglePlatformSchema.parse(body);
 
-    // TODO: Verify user owns the content/platform
-    // This requires checking if content belongs to user's project
+    // Verify user owns the content
+    const { prisma } = await import('@/lib/db');
+    const content = await prisma.content.findFirst({
+      where: {
+        id: validated.contentId,
+        project: {
+          userId: session.user.id,
+        },
+      },
+      select: {
+        id: true,
+        projectId: true,
+      },
+    });
+
+    if (!content) {
+      return NextResponse.json(
+        { error: 'Content not found or access denied' },
+        { status: 404 }
+      );
+    }
+
+    // Verify user owns the platform connection
+    const platform = await prisma.platform.findFirst({
+      where: {
+        id: validated.platformId,
+        userId: session.user.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!platform) {
+      return NextResponse.json(
+        { error: 'Platform not found or access denied' },
+        { status: 404 }
+      );
+    }
 
     const result = await publishToSinglePlatform(
       validated.contentId,

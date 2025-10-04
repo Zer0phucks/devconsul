@@ -15,7 +15,7 @@ const retrySchema = z.object({
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { publicationId: string } }
+  context: { params: Promise<{ publicationId: string }> }
 ) {
   try {
     const session = await getSession();
@@ -23,10 +23,11 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { publicationId } = await context.params;
     const body = await req.json();
     const validated = retrySchema.parse(body);
 
-    const result = await retryFailedPublication(params.publicationId, {
+    const result = await retryFailedPublication(publicationId, {
       resetRetryCount: validated.resetRetryCount,
     });
 

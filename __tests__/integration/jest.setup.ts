@@ -9,12 +9,23 @@ import { ReadableStream } from 'stream/web';
 
 // Polyfill Web APIs for Next.js
 global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder as any;
-global.ReadableStream = ReadableStream as any;
+global.TextDecoder = TextDecoder as unknown as typeof globalThis.TextDecoder;
+global.ReadableStream = ReadableStream as unknown as typeof globalThis.ReadableStream;
+
+interface MockRequestOptions {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+}
+
+interface MockResponseInit {
+  status?: number;
+  headers?: Record<string, string>;
+}
 
 // Mock NextRequest and NextResponse for API route testing
 class MockRequest {
-  constructor(public url: string, public options: any = {}) {}
+  constructor(public url: string, public options: MockRequestOptions = {}) {}
   get method() { return this.options.method || 'GET'; }
   get headers() { return new Headers(this.options.headers || {}); }
   async json() { return this.options.body ? JSON.parse(this.options.body) : {}; }
@@ -22,21 +33,21 @@ class MockRequest {
 }
 
 class MockResponse {
-  constructor(public body: any, public init: any = {}) {}
+  constructor(public body: unknown, public init: MockResponseInit = {}) {}
   get status() { return this.init.status || 200; }
   get headers() { return new Headers(this.init.headers || {}); }
   async json() { return typeof this.body === 'string' ? JSON.parse(this.body) : this.body; }
   async text() { return typeof this.body === 'string' ? this.body : JSON.stringify(this.body); }
-  static json(data: any, init?: any) { return new MockResponse(JSON.stringify(data), { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) } }); }
+  static json(data: unknown, init?: MockResponseInit) { return new MockResponse(JSON.stringify(data), { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) } }); }
 }
 
-global.Request = MockRequest as any;
-global.Response = MockResponse as any;
+global.Request = MockRequest as unknown as typeof globalThis.Request;
+global.Response = MockResponse as unknown as typeof globalThis.Response;
 global.Headers = class Headers extends Map {
   get(key: string) { return super.get(key.toLowerCase()); }
   set(key: string, value: string) { return super.set(key.toLowerCase(), value); }
   has(key: string) { return super.has(key.toLowerCase()); }
-} as any;
+} as unknown as typeof globalThis.Headers;
 
 // Set test environment variables
 process.env.NODE_ENV = 'test';
@@ -88,7 +99,7 @@ afterEach(() => {
 });
 
 // Global error handler for unhandled rejections
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Rejection in test:', reason);
   throw reason;
 });

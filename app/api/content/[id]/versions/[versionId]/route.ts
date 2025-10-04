@@ -9,7 +9,7 @@ import { prisma } from '@/lib/db';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; versionId: string } }
+  context: { params: Promise<{ id: string; versionId: string }> }
 ) {
   try {
     const session = await getSession();
@@ -17,7 +17,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id, versionId } = params;
+    const { id, versionId } = await context.params;
 
     // Check content access
     const content = await prisma.generatedContent.findUnique({
@@ -56,7 +56,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; versionId: string } }
+  context: { params: Promise<{ id: string; versionId: string }> }
 ) {
   try {
     const session = await getSession();
@@ -64,7 +64,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id, versionId } = params;
+    const { id, versionId } = await context.params;
 
     // Check content access
     const content = await prisma.generatedContent.findUnique({

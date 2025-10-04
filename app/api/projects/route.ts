@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from "next/server"
 import { PrismaClient } from "@prisma/client"
 import { projectSchema } from "@/lib/validations/project"
+import { getAuthUser } from "@/lib/auth-helpers"
 
 const prisma = new PrismaClient()
 
 // GET /api/projects - List all projects for authenticated user
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Get user ID from session/auth middleware
-    // For now, assume userId is available
-    const userId = request.headers.get("x-user-id") || "default-user"
+    // Verify authentication using Supabase
+    const user = await getAuthUser(request)
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
+    const userId = user.id
 
     const projects = await prisma.project.findMany({
       where: { userId },
@@ -53,13 +62,22 @@ export async function GET(request: NextRequest) {
 // POST /api/projects - Create a new project
 export async function POST(request: NextRequest) {
   try {
+    // Verify authentication using Supabase
+    const user = await getAuthUser(request)
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
 
     // Validate request body
     const validatedData = projectSchema.parse(body)
 
-    // TODO: Get user ID from session/auth middleware
-    const userId = request.headers.get("x-user-id") || "default-user"
+    const userId = user.id
 
     // Create project in database
     const project = await prisma.project.create({

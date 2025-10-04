@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { PrismaClient } from "@prisma/client"
 import { updateProjectSchema } from "@/lib/validations/project"
+import { getAuthUser } from "@/lib/auth-helpers"
 
 const prisma = new PrismaClient()
 
@@ -10,8 +11,18 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Verify authentication using Supabase
+    const user = await getAuthUser(request)
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
     const { id } = await params
-    const userId = request.headers.get("x-user-id") || "default-user"
+    const userId = user.id
 
     const project = await prisma.project.findFirst({
       where: { id, userId },
@@ -50,9 +61,19 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Verify authentication using Supabase
+    const user = await getAuthUser(request)
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
     const { id } = await params
     const body = await request.json()
-    const userId = request.headers.get("x-user-id") || "default-user"
+    const userId = user.id
 
     // Validate request body
     const validatedData = updateProjectSchema.parse(body)
@@ -115,8 +136,18 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Verify authentication using Supabase
+    const user = await getAuthUser(request)
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
     const { id } = await params
-    const userId = request.headers.get("x-user-id") || "default-user"
+    const userId = user.id
 
     // Check if project exists and belongs to user
     const existingProject = await prisma.project.findFirst({

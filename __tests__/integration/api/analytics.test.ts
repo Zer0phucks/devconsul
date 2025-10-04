@@ -5,10 +5,10 @@
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import {
-  createMockRequest,
   mockPrisma,
   testDataFactories,
 } from '../utils/test-helpers';
+import type * as MetricsModule from '@/lib/analytics/metrics';
 
 // Mock analytics functions
 jest.mock('@/lib/analytics/metrics', () => ({
@@ -23,13 +23,16 @@ jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn(() => mockPrisma),
 }));
 
+// Get mocked functions - using dynamic import pattern for Jest compatibility
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const metricsModule = require('@/lib/analytics/metrics') as jest.Mocked<typeof MetricsModule>;
 const {
   getContentMetrics,
   getPlatformMetrics,
   getProjectAnalytics,
   getCostAnalytics,
   exportAnalytics,
-} = require('@/lib/analytics/metrics');
+} = metricsModule;
 
 describe('Analytics and Metrics API Integration Tests', () => {
   beforeEach(() => {
@@ -91,7 +94,15 @@ describe('Analytics and Metrics API Integration Tests', () => {
 
       mockPrisma.contentMetrics.findMany.mockResolvedValue([mockMetrics]);
 
-      const calculateEngagementRate = (metrics: any) => {
+      interface MetricsData {
+        clicks: number;
+        shares: number;
+        likes: number;
+        comments: number;
+        impressions: number;
+      }
+
+      const calculateEngagementRate = (metrics: MetricsData) => {
         const totalEngagement =
           metrics.clicks + metrics.shares + metrics.likes + metrics.comments;
         return metrics.impressions > 0
@@ -507,7 +518,15 @@ describe('Analytics and Metrics API Integration Tests', () => {
         isViral: true,
       };
 
-      const detectViral = (data: any) => {
+      interface ViralMetrics {
+        contentId: string;
+        impressions: number;
+        engagement: number;
+        growthRate: number;
+        isViral: boolean;
+      }
+
+      const detectViral = (data: ViralMetrics) => {
         const viralThreshold = 10; // 10x average
         return data.growthRate > viralThreshold;
       };

@@ -54,6 +54,34 @@ export const PLATFORM_LIMITS: Record<string, PlatformLimits> = {
     truncationSuffix: '…',
     preserveWordBoundary: true,
   },
+  hashnode: {
+    name: 'Hashnode',
+    characterLimit: 250000, // Very generous limit for articles
+    recommendedLimit: 200000,
+    truncationSuffix: '…',
+    preserveWordBoundary: true,
+  },
+  hashnodeTitle: {
+    name: 'Hashnode Title',
+    characterLimit: 250,
+    recommendedLimit: 100,
+    truncationSuffix: '…',
+    preserveWordBoundary: true,
+  },
+  devto: {
+    name: 'Dev.to',
+    characterLimit: 400000, // Dev.to has very generous limits
+    recommendedLimit: 350000,
+    truncationSuffix: '…',
+    preserveWordBoundary: true,
+  },
+  devtoTitle: {
+    name: 'Dev.to Title',
+    characterLimit: 250,
+    recommendedLimit: 128,
+    truncationSuffix: '…',
+    preserveWordBoundary: true,
+  },
 };
 
 export interface EnforcementResult {

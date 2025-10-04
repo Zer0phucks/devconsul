@@ -20,7 +20,7 @@ const CACHE_DURATION_MS = 60 * 60 * 1000;
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { projectId: string } }
+  context: { params: Promise<{ projectId: string }> }
 ) {
   try {
     const session = await getSession();
@@ -28,7 +28,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { projectId } = params;
+    const { projectId } = await context.params;
     const { searchParams } = new URL(request.url);
     const periodType = (searchParams.get('period') || 'MONTHLY') as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
     const forceRefresh = searchParams.get('refresh') === 'true';
@@ -100,7 +100,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { projectId: string } }
+  context: { params: Promise<{ projectId: string }> }
 ) {
   try {
     const session = await getSession();
@@ -108,7 +108,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { projectId } = params;
+    const { projectId } = await context.params;
     const body = await request.json();
     const periodType = (body.period || 'MONTHLY') as 'DAILY' | 'WEEKLY' | 'MONTHLY';
 

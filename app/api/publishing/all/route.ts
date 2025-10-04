@@ -24,6 +24,27 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = publishAllSchema.parse(body);
 
+    // Verify user owns the content
+    const { prisma } = await import('@/lib/db');
+    const content = await prisma.content.findFirst({
+      where: {
+        id: validated.contentId,
+        project: {
+          userId: session.user.id,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!content) {
+      return NextResponse.json(
+        { error: 'Content not found or access denied' },
+        { status: 404 }
+      );
+    }
+
     const result = await publishAllEnabled(validated.contentId, {
       dryRun: validated.dryRun,
     });
