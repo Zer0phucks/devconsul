@@ -1,0 +1,17 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Simplified hexagon icon for favicon -->
+  <path d="M16 4 L26 9.5 L26 22.5 L16 28 L6 22.5 L6 9.5 Z"
+        fill="#0d4d2d"
+        stroke="#1a6d46"
+        stroke-width="1"/>
+
+  <!-- Inner geometric pattern -->
+  <path d="M16 10 L20 14 L16 14 Z" fill="#2e8b57"/>
+  <path d="M16 14 L20 14 L20 18 Z" fill="#1a6d46"/>
+  <path d="M12 14 L16 14 L16 18 Z" fill="#1a6d46"/>
+  <path d="M16 18 L20 18 L16 22 Z" fill="#134d35"/>
+  <path d="M12 18 L16 18 L16 22 Z" fill="#0d4d2d"/>
+
+  <!-- Central accent -->
+  <circle cx="16" cy="14" r="2" fill="#3cb371"/>
+</svg>

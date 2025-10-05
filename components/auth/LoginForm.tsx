@@ -30,7 +30,7 @@ export function LoginForm() {
       if (signInError) {
         setError("Invalid email or password");
       } else {
-        router.push("/admin");
+        router.push("/dashboard");
         router.refresh();
       }
     } catch (error) {
@@ -46,7 +46,7 @@ export function LoginForm() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/admin`,
+          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
         },
       });
 

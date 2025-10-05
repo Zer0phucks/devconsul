@@ -70,7 +70,7 @@ export function SignupForm() {
         setError("Account created but login failed. Please try logging in.");
         router.push("/login");
       } else {
-        router.push("/admin");
+        router.push("/dashboard");
         router.refresh();
       }
     } catch (error) {
@@ -86,7 +86,7 @@ export function SignupForm() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/admin`,
+          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
         },
       });
 
