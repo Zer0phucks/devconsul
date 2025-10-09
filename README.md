@@ -1,221 +1,106 @@
-# AI GitHub Monitor & Blog Publisher
+# DevConsul
 
-An automated system that monitors GitHub repository activity, generates AI-powered blog posts, and sends weekly newsletters - all deployed on Vercel.
+Developer Authority & Engagement Platform - Build your reputation by solving real problems.
 
-## Features
+## Overview
 
-- 🔄 **GitHub Activity Monitoring**: Real-time webhook integration to track commits, PRs, issues, and releases
-- 🤖 **AI Content Generation**: Uses Vercel AI Gateway with GPT-4 to generate engaging blog posts
-- 📝 **Automated Blog**: MDX-powered blog with automatic publishing of generated content
-- 📧 **Newsletter System**: Weekly email digests sent to subscribers via Resend
-- 🎛️ **Admin Dashboard**: Monitor activity, trigger content generation, and manage subscribers
-- ⚡ **Edge-First Architecture**: Built on Vercel's edge runtime for optimal performance
+DevConsul is a unified platform for developers to:
+- Monitor mentions across Reddit, LinkedIn, and Twitter
+- Extract and track pain points and problems
+- Auto-create GitHub issues for building in public
+- Automate devlog updates on Twitter
+- Build developer authority through public problem-solving
 
-## Tech Stack
+## Getting Started
 
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **AI**: Vercel AI SDK with OpenAI/Anthropic
-- **Storage**:
-  - Vercel Postgres (user data, blog posts)
-  - Vercel KV (caching, activity storage)
-  - Vercel Blob (images, attachments)
-- **Email**: Resend with React Email
-- **Deployment**: Vercel
+### Prerequisites
 
-## Setup Instructions
+- Node.js 18+ installed
+- npm or yarn package manager
+- Supabase account (for database)
+- GitHub account (for issue integration)
 
-### 1. Clone and Install
+### Environment Setup
+
+1. Copy the environment template:
+```bash
+cp .env.example .env.local
+```
+
+2. Fill in the required environment variables in `.env.local`:
+
+#### Supabase (Required for MVP)
+- `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Public anonymous key
+- `SUPABASE_SERVICE_ROLE_KEY`: Service role key (keep secret)
+
+#### Social OAuth (To be configured)
+- Reddit, LinkedIn, Twitter credentials for API access
+
+#### GitHub Integration (To be configured)
+- GitHub App credentials for issue automation
+
+#### Other Services (To be configured)
+- Inngest (background job processing)
+- Sentry (error monitoring)
+- OpenAI (NLP for pain point extraction)
+
+### Installation
 
 ```bash
-git clone <your-repo-url>
-cd fullselfpublishing
+# Install dependencies
 npm install
-```
 
-### 2. Create Vercel Project
-
-1. Push code to GitHub
-2. Import to Vercel: https://vercel.com/new
-3. Connect your GitHub repository
-
-### 3. Set Up Vercel Storage
-
-In your Vercel dashboard:
-
-1. **Postgres Database**:
-   - Go to Storage → Create Database → Postgres
-   - Copy connection strings to environment variables
-
-2. **KV Store**:
-   - Go to Storage → Create Database → KV
-   - Copy KV URLs and tokens
-
-3. **Blob Storage**:
-   - Go to Storage → Create Database → Blob
-   - Copy read/write token
-
-### 4. Configure Environment Variables
-
-Copy `.env.example` to `.env.local` and fill in:
-
-#### GitHub Configuration
-- `GITHUB_TOKEN`: Create at https://github.com/settings/tokens
-- `GITHUB_WEBHOOK_SECRET`: Generate a random secret
-- `GITHUB_REPO_OWNER`: Your GitHub username
-- `GITHUB_REPO_NAME`: Repository to monitor
-
-#### AI Configuration
-- `OPENAI_API_KEY`: Get from https://platform.openai.com
-- `ANTHROPIC_API_KEY` (optional): From https://console.anthropic.com
-
-#### Email Configuration
-- `RESEND_API_KEY`: Get from https://resend.com
-- `EMAIL_FROM`: Your verified email domain
-
-#### Application
-- `NEXT_PUBLIC_APP_URL`: Your Vercel deployment URL
-- `NEXTAUTH_SECRET`: Generate with `openssl rand -base64 32`
-- `ADMIN_PASSWORD_HASH`: Hash your admin password
-
-### 5. Initialize Database
-
-Create the required tables by running:
-
-```bash
-npm run setup:db
-```
-
-### 6. Set Up GitHub Webhook
-
-1. Go to your GitHub repository settings
-2. Navigate to Webhooks → Add webhook
-3. Set Payload URL: `https://your-app.vercel.app/api/webhooks/github`
-4. Set Content type: `application/json`
-5. Set Secret: Your `GITHUB_WEBHOOK_SECRET`
-6. Select events: Push, Pull requests, Issues, Releases
-
-### 7. Configure Cron Jobs
-
-The `vercel.json` file already configures weekly newsletter sending. Vercel will automatically set this up on deployment.
-
-## Usage
-
-### Blog
-
-- Public blog: `/blog`
-- Individual posts: `/blog/[slug]`
-- RSS feed: `/blog/rss`
-
-### Newsletter
-
-- Subscribe page: `/newsletter`
-- API endpoint: `/api/newsletter/subscribe`
-
-### Admin Dashboard
-
-- Access: `/admin` (password protected)
-- Features:
-  - View GitHub activity
-  - Trigger content generation
-  - Send newsletters manually
-  - View statistics
-
-## Development
-
-### Local Development
-
-```bash
+# Run development server
 npm run dev
 ```
 
-Visit http://localhost:3000
+Open [http://localhost:3000](http://localhost:3000) to see the application.
 
-### Testing Webhooks Locally
+### Development Tools
 
-Use ngrok or similar to expose your local server:
+This project uses:
+- **Next.js 15** - React framework with App Router
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first styling
+- **shadcn/ui** - Beautiful, accessible components
+- **Prettier** - Code formatting
+- **ESLint** - Code linting
+- **Husky** - Git hooks for code quality
 
-```bash
-ngrok http 3000
+## Project Structure
+
+```
+devconsul/
+├── src/
+│   ├── app/           # Next.js app router pages
+│   ├── components/    # React components
+│   │   └── ui/        # shadcn/ui components
+│   └── lib/           # Utility functions
+├── public/            # Static assets
+├── TASKS.md           # Development roadmap
+└── README.md          # This file
 ```
 
-Then update your GitHub webhook URL to the ngrok URL.
+## Development Workflow
 
-## Content Generation Logic
+1. Check `TASKS.md` for current development status
+2. Create feature branch for each task
+3. Implement and test changes
+4. Submit for review
+5. Merge to main after approval
 
-The system automatically generates content when:
+## Scripts
 
-1. **Releases**: Any new release triggers immediate blog post
-2. **Pull Requests**: Merged PRs trigger content generation
-3. **Commits**: 5+ commits in a short period trigger summary post
-4. **Weekly**: Newsletter generated from week's activities
+- `npm run dev` - Start development server with Turbopack
+- `npm run build` - Build for production
+- `npm start` - Start production server
+- `npm run lint` - Run ESLint
 
-Content generation uses AI to:
-- Summarize technical changes
-- Explain impact and benefits
-- Create engaging narratives
-- Generate appropriate tags
+## Contributing
 
-## Customization
-
-### AI Prompts
-
-Edit prompts in `lib/ai/content-generator.ts`:
-- `createBlogPrompt()`: Blog post generation
-- `createNewsletterPrompt()`: Newsletter content
-
-### Styling
-
-- Blog theme: `app/blog/layout.tsx`
-- Email template: `emails/newsletter-template.tsx`
-- Tailwind config: `tailwind.config.js`
-
-### Content Rules
-
-Modify in `lib/ai/content-generator.ts`:
-- `shouldGenerateContent()`: When to auto-generate
-- `parseGeneratedContent()`: Content parsing logic
-
-## Monitoring
-
-### Logs
-- Vercel dashboard → Functions → Logs
-
-### Analytics
-- GitHub webhook deliveries
-- Vercel Analytics (optional add-on)
-- Email open/click rates in Resend
-
-## Troubleshooting
-
-### Webhook Issues
-- Check GitHub webhook recent deliveries
-- Verify signature in logs
-- Ensure environment variables are set
-
-### AI Generation
-- Check OpenAI API key and credits
-- Review generation prompts
-- Check Vercel KV for stored activities
-
-### Email Delivery
-- Verify Resend API key
-- Check domain verification
-- Review subscriber status in database
-
-## Security Considerations
-
-- All webhooks are signature-verified
-- Admin routes are password-protected
-- Database credentials are encrypted
-- API keys should never be exposed client-side
-- Use environment variables for all secrets
+This is a personal project for building in public. Follow the tasks in `TASKS.md` for the development roadmap.
 
 ## License
 
-MIT
-
-## Support
-
-For issues or questions, please open a GitHub issue.
+Private project - Not licensed for public use
